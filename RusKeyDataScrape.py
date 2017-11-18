@@ -70,7 +70,7 @@ def getVerbList(page=0):
 
 getVerbList()
 
-test = requests.get('https://en.openrussian.org/ru/сказать')
+test = requests.get('https://en.openrussian.org/ru/видеть')
 testSoup = BeautifulSoup(test.content,'lxml')
 russianExamples = testSoup.find_all('ul', class_='sentences') #creates a list or string whose single element/content is the exmple sentences
 examplesString = stripSoupList(russianExamples,True)
@@ -87,9 +87,19 @@ imperativePlural = imperativePlural.split('\n') #same as singular process
 imperativePlural = imperativePlural[1]
 pastForms = [] #this will contain the past forms
 for item in testSoup.find(class_='past').tbody.stripped_strings:
-    if countVowels(item) > 0:
+    if countVowels(item) > 0: #test whether the item in stripped_strings is Russian
         pastForms.append(item) #need to implement a function to append these to the textList when incorporated into getVerbList
 #need to write: conditional based on aspect; Soup the present forms or future forms accordingly
+nonPast = testSoup.find(class_='presfut').table.find_all('tr') #creates a list of all the rows in the table containing non-past forms.
+nonPastForms = []
+for item in nonPast:
+    rowStringList = item.text[1:-1].split('\n') # strip the newline characters from either end of each row's text content
+                                    # and split the string into a three item list; for imperfective verbs, the verb form will
+                                    # be index 1. For perfective verbs, the verb form will be at index 2
+    if aspect == 'imperfective':
+        nonPastForms.append(rowStringList[1])
+    else:
+        nonPastForms.append(rowStringList[2])
 
 """
 #need to iterate through list above and create stripped strings generator for each element
