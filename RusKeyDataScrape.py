@@ -74,6 +74,16 @@ test = requests.get('https://en.openrussian.org/ru/видеть')
 testSoup = BeautifulSoup(test.content,'lxml')
 russianExamples = testSoup.find_all('ul', class_='sentences') #creates a list or string whose single element/content is the exmple sentences
 examplesString = stripSoupList(russianExamples,True)
+sentences = [] #need to parse the string with the examples, sparating them into individual list items
+countPunctuation = 0 #will count the puctuation marks - every second mark, append sentence and translation to setences
+parseStart = 0 #pointer to tell us where we are in the list
+for char in range(len(examplesString)):
+    if examplesString[char] == '.' or examplesString[char] == '!' or examplesString[char] == '?':
+        countPunctuation += 1
+        if countPunctuation % 2 == 0:
+            sentences.append(examplesString[parseStart:char+1])
+            parseStart = char + 1
+
 verbType = testSoup.find(class_='info').text
 if 'imperfective' in verbType:
     aspect = 'imperfective'
