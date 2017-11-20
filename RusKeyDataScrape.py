@@ -7,7 +7,7 @@ url = 'https://en.openrussian.org/list/verbs'
 verbMasterList = [] #this will be a master list containing
               #a list for each verb as its elements
 verbFormsKey = ['infinitive','aspect','frequency','meaning','imperative singular',] #this contains the name of each element appended for an individual verb
-
+commonEndUnstressed = ["его","она","они","себе","тебе","меня","тебя","себя","уже","чего","ничего"] #list of words commonly left unstressed in examples that have stressed final vowels
 
 
 def countVowels(word):
@@ -19,7 +19,7 @@ def countVowels(word):
             count += 1
     return count
 
-def checkForStress(word):
+def checkWordForStress(word):
     """takes a string and returns True if the word is one syllable long or has
     two or more syllables, one of which is accented; returns False otherwise"""
     #limitation here would be stressed prepositions...
@@ -27,6 +27,33 @@ def checkForStress(word):
         return False
     else:
         return True
+
+def checkSentenceForStress(sentence):
+    """sentence - a string containing a russian sentence
+    returns True if every word is properly stressed, false otherwise"""
+    sentence = sentence.split(' ')
+    for word in sentence:
+        if not checkWordForStress(word):
+            return False
+    return True
+
+def markSimpleStresses(sentence):
+    """add stresses to short common russian words that are often unstressed
+    sentence - a string of russian words; returns same string with unstressed common words replaced by stressed versions"""
+    sentence = sentence.split(' ')
+    for n in range(len(sentence)):
+        if sentence[n] in commonEndUnstressed:
+            sentence[n] += chr(769)
+        elif sentence[n] == "больше":
+            sentence[n] = "бо"+ chr(769) + "льше"
+        elif sentence[n] == "нужно":
+            sentence[n] = "ну" + chr(769) + "жно"
+        elif sentence[n] == "будет":
+            sentence[n] = "бу" + chr(769) + "дет"
+        result = " ".join(sentence)
+    return result
+            
+        
 
 def stripSoupList(SoupObj, string=False):
     """takes a list generated from a Soup object and removes newlines and \xa0 
@@ -70,11 +97,14 @@ def getVerbList(page=0):
 
 getVerbList()
 
+
+
 test = requests.get('https://en.openrussian.org/ru/видеть')
 testSoup = BeautifulSoup(test.content,'lxml')
 russianExamples = testSoup.find_all('ul', class_='sentences') #creates a list or string whose single element/content is the exmple sentences
 examplesString = stripSoupList(russianExamples,True)
 sentences = [] #need to parse the string with the examples, sparating them into individual list items
+stressedSentences = [] # we will test each example setence to see if every word is properly stressed
 countPunctuation = 0 #will count the puctuation marks - every second mark, append sentence and translation to setences
 parseStart = 0 #pointer to tell us where we are in the list
 for char in range(len(examplesString)):
@@ -83,6 +113,15 @@ for char in range(len(examplesString)):
         if countPunctuation % 2 == 0:
             sentences.append(examplesString[parseStart:char+1])
             parseStart = char + 1
+for n in range(len(sentences)):
+    sentences[n] = sentences[n].split(' - ') #sentences is now a list containing 2 element lists. The first element is a russian sentence
+                                            #and the second is its translation.
+for n in range(len(sentences)):
+    sentences[n][0] = markSimpleStresses(sentences[n][0]) #add stresses to some basic words (this just 
+                                                        #facilitates the process of finding three examples that are properly stressed)
+    if checkSentenceForStress(sentences[n][0]):
+        stressedSentences.append(sentences[n])
+
 
 verbType = testSoup.find(class_='info').text
 if 'imperfective' in verbType:
