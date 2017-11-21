@@ -2,11 +2,14 @@ import requests
 import unicodedata
 from bs4 import BeautifulSoup
 import sys
-baseUrl = 'https://en.openrussian.org/'
+baseUrl = 'https://en.openrussian.org'
 url = 'https://en.openrussian.org/list/verbs'
 verbMasterList = [] #this will be a master list containing
               #a list for each verb as its elements
-verbFormsKey = ['infinitive','aspect','frequency','meaning','imperative singular',] #this contains the name of each element appended for an individual verb
+verbFormsKey = ['infinitive','aspect','frequency','meaning','1st singular',
+                '2nd singular', '3rd singular', '1st plural','2nd plural',
+                '3rd plural', 'imperative singular','imperative plural',
+                ] #this contains the name of each element appended for an individual verb
 commonEndUnstressed = ["его","она","они","себе","тебе","меня","тебя","себя","уже","чего","ничего"] #list of words commonly left unstressed in examples that have stressed final vowels
 
 
@@ -73,7 +76,9 @@ def stripSoupList(SoupObj, string=False):
             holder[i] = holder[i].replace(u'\xa0','')
             holder[i] = holder[i].replace(u'\n','')
         return holder
-        
+    
+    
+
 def getVerbList(page=0):
     """creates a list whose elements are lists with information about the verbs
     on a given page; default page is 0, corresponding to the first page
@@ -86,19 +91,118 @@ def getVerbList(page=0):
     for i in range(len(verbRows)):
         if i != 0:
             if verbRows[i].a['href'] == verbRows[i-1].a['href']:
-                continue
-        text = verbRows[i].text #gets the text of the row (getting rid of html tags)
-        text = text [1:-1] #strips the beginning and end new lines
-        textList = text.split('\n') #returns a list of the 3 elements in each row: freq #, verb, meaning
-        textList[0],textList[1] = textList[1],textList[0] #swap the frequency to index 1 and the infinitive to index 0
-        #need to write a helper function that pulls the href for each verb and returns a list containing examples and conjugated forms
-        verbMasterList.append(textList)
+                continue#skip verbs that point to the same conjugation
+        #1 - grab the information in each row of the page on the frequency list and append it to the list for the relevant verb
+        verbText = verbRows[i].text[1:-1] #gets the text of the row (getting rid of html tags and stripping leading and ending newlines)
+        verbInfoList = verbText.split('\n') #returns a list of the 3 elements in each row: freq #, infinitive, meaning
+        verbInfoList[0],verbInfoList[1] = verbInfoList[1],verbInfoList[0] #swap the frequency to index 1 and the infinitive to index 0
+        #2 - go to the page of the verb listed in each row to obtain info about the aspect and conjugation, as well as examples
+        verbUrl = baseUrl + verbRows[i].a['href'] #grab the link to the verb
+        print('getting',verbUrl)
+        verbPage = requests.get(verbUrl)
+        verbSoupObj = BeautifulSoup(verbPage.content, 'lxml') #creates a beautiful soup object from the verb's conjugation page
+        #3 - determine the aspect of the verb and add it to the list for the relevant verb
+        verbType = verbSoupObj.find(class_='info').text #identify whether verb is perfective or imperfective
+        if 'imperfective' in verbType:
+            verbType = 'imperfective'
+        elif 'perfective' not in verbType:
+            verbType = 'imperfective'
+        else:
+            verbType = 'perfective'
+        verbInfoList.insert(1,verbType) #insert aspect at index 1; verbInfoList now contains (infinitive, aspect, freq #, meaning)
+        #4 - isolate the non-past conjugation (i.e. present for imperfective verbs or future for perfective verbs)
+        #    and add the relevant forms to the list for the relevant verb
+        nonPastRows = verbSoupObj.find(class_='presfut').table.find_all('tr') #creates a list of all the rows in the table containing non-past forms.
+        nonPastForms = []
+        for row in nonPastRows:
+            rowStringList = row.text[1:-1].split('\n') # strip the newline characters from either end of each row's text content
+                                            # and split the string into a three item list ([personal pronoun], [present form], [future form];
+                                            #for imperfective verbs, the conjugation we are interested in will be the present forms (index 1)
+                                            #For perfective verbs, we will be interested in the conjugation in the future (index 2)
+            if verbType == 'imperfective':
+                nonPastForms.append(rowStringList[1])
+            else:
+                nonPastForms.append(rowStringList[2])
+        for form in nonPastForms:
+            verbInfoList.append(form)
+        #5 - grab imperative forms and append them to the list for the verb
+        imperativeSingular = verbSoupObj.find('table').tr.text[1:-1] #find the imperative singular form in the form 'Singular\n[imperative form]'
+        imperativeSingular = imperativeSingular.split('\n') #split the imperative singular form string into a list ['Singular', '[imperative form]']
+        imperativeSingular = imperativeSingular[1]
+        verbInfoList.append(imperativeSingular)
+        imperativePlural = verbSoupObj.find('table').tr.next_sibling.next_sibling.text[1:-1]
+        imperativePlural = imperativePlural.split('\n') #same as singular process
+        imperativePlural = imperativePlural[1]
+        verbInfoList.append(imperativePlural)
+        #6 - get the past tense forms of the verb and append them to the list for the verb
+        pastForms = [] #this list will contain the past forms
+        for item in verbSoupObj.find(class_='past').tbody.stripped_strings:
+            if countVowels(item) > 0: #test whether item is Russian string
+                pastForms.append(item) #need to implement a function to append these to the textList when incorporated into getVerbList
+        for form in pastForms:
+            verbInfoList.append(form)
+        #7 - grab at least 3 properly stressed examples and append them to the list
+        russianExamples = verbSoupObj.find_all('ul', class_='sentences')
+        examplesString = stripSoupList(russianExamples,True) #returns a string of all the text contents of ul items of class sentences
+        sentences = [] #the examples will be parsed from the examples string into this list
+        stressedSentences = [] #from the sentences list, the propperly stressed examples will be filtered into this list
+        countPunctuation = 0 #the senteces list will be parsed by punctuation - every second punctuation mark, we have gotten
+                            #to the end of a Russian sentence/translation pair.
+        parseStart = 0 #this pointer will adjust as we iterate through the string to point at the beginning of the next example
+        for num in range(len(examplesString)):
+            if examplesString[num] == '.' or examplesString[num] == '!' or examplesString[num] == '?':
+                countPunctuation += 1
+                if countPunctuation % 2 == 0: # if the number of punctuation marks is even, we have a full example/translation pair
+                    sentences.append(examplesString[parseStart:num+1]) #add the example/translation pair
+                    parseStart = num + 1 #adjust our starting pointer so that it points to the beginning of the next example
+        for n in range(len(sentences)):
+            sentences[n] = sentences[n].split(' - ') #sentences now contains lists as its elements; each list element contains a russian sentence (index 0)
+                                                    #and its translation (index 1).
+            sentences[n][0] = markSimpleStresses(sentences[n][0]) #add stresses to some basic words (this just 
+                                                                #facilitates the process of finding three examples
+                                                                #that are properly stressed)
+            if checkSentenceForStress(sentences[n][0]):
+                stressedSentences.append(sentences[n])
+        trycount = 0
+        while len(stressedSentences) < 3:
+            if trycount > 4:
+                print('failed to grab examples for',verbInfoList[0])
+                break
+            trycount += 1
+            print('less than three examples; reloading')
+            verbPage = requests.get(verbUrl)
+            verbSoupObj = BeautifulSoup(verbPage.content, 'lxml') #creates a beautiful soup object from the verb's conjugation page
+            russianExamples = verbSoupObj.find_all('ul', class_='sentences')
+            examplesString = stripSoupList(russianExamples,True) #returns a string of all the text contents of ul items of class sentences
+            sentences = [] #the examples will be parsed from the examples string into this list
+            stressedSentences = [] #from the sentences list, the propperly stressed examples will be filtered into this list
+            countPunctuation = 0 #the senteces list will be parsed by punctuation - every second punctuation mark, we have gotten
+                                #to the end of a Russian sentence/translation pair.
+            parseStart = 0 #this pointer will adjust as we iterate through the string to point at the beginning of the next example
+            for num in range(len(examplesString)):
+                if examplesString[num] == '.' or examplesString[num] == '!' or examplesString[num] == '?':
+                    countPunctuation += 1
+                    if countPunctuation % 2 == 0: # if the number of punctuation marks is even, we have a full example/translation pair
+                        sentences.append(examplesString[parseStart:num+1]) #add the example/translation pair
+                        parseStart = num + 1 #adjust our starting pointer so that it points to the beginning of the next example
+            for n in range(len(sentences)):
+                sentences[n] = sentences[n].split(' - ') #sentences now contains lists as its elements; each list element contains a russian sentence (index 0)
+                                                        #and its translation (index 1).
+                sentences[n][0] = markSimpleStresses(sentences[n][0]) #add stresses to some basic words (this just 
+                                                                    #facilitates the process of finding three examples
+                                                                    #that are properly stressed)
+                if checkSentenceForStress(sentences[n][0]):
+                    stressedSentences.append(sentences[n])
+        if len(stressedSentences) > 0:
+            for item in stressedSentences:
+                verbInfoList.append(item)
+        verbMasterList.append(verbInfoList)
         
 
 getVerbList()
 
 
-
+"""
 test = requests.get('https://en.openrussian.org/ru/видеть')
 testSoup = BeautifulSoup(test.content,'lxml')
 russianExamples = testSoup.find_all('ul', class_='sentences') #creates a list or string whose single element/content is the exmple sentences
@@ -149,7 +253,7 @@ for item in nonPast:
         nonPastForms.append(rowStringList[1])
     else:
         nonPastForms.append(rowStringList[2])
-
+"""
 """
 #need to iterate through list above and create stripped strings generator for each element
 
