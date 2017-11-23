@@ -164,12 +164,12 @@ def getVerbList(page=0):
             if checkSentenceForStress(sentences[n][0]):
                 stressedSentences.append(sentences[n])
         trycount = 0
-        while len(stressedSentences) < 3:
+        while len(stressedSentences) < 6:
             if trycount > 4:
-                print('failed to grab examples for',verbInfoList[0])
+                print('failed to grab six examples for',verbInfoList[0] + ". Gathered",len(stressedSentences),"examples.")
                 break
             trycount += 1
-            print('less than three examples; reloading')
+            print('less than siz examples; reloading')
             verbPage = requests.get(verbUrl)
             verbSoupObj = BeautifulSoup(verbPage.content, 'lxml') #creates a beautiful soup object from the verb's conjugation page
             russianExamples = verbSoupObj.find_all('ul', class_='sentences')
