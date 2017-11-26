@@ -1,7 +1,7 @@
 import requests
-import unicodedata
 from bs4 import BeautifulSoup
-import sys
+import boto3
+import os
 baseUrl = 'https://en.openrussian.org'
 url = 'https://en.openrussian.org/list/verbs'
 verbMasterList = [] #this will be a master list containing
@@ -77,7 +77,35 @@ def stripSoupList(SoupObj, string=False):
             holder[i] = holder[i].replace(u'\n','')
         return holder
     
-    
+def getExamples(someurl):
+    """takes url for a verb and returns a list of properly stresed examples;
+    if not enough properly stressed examples are located, asks the user to
+    manually specify missing stresses for examples with least missing stresses
+    """
+    verbPage = requests.get(someurl)
+    verbSoupObj = BeautifulSoup(verbPage.content, 'lxml') #creates a beautiful soup object from the verb's conjugation page
+    russianExamples = verbSoupObj.find_all('ul', class_='sentences')
+    examplesString = stripSoupList(russianExamples,True) #creates a string of all the text contents of ul items of class sentences
+    sentences = [] #the examples will be parsed from the examples string into this list
+    stressedSentences = [] #from the sentences list, the propperly stressed examples will be filtered into this list
+    countPunctuation = 0 #the senteces list will be parsed by punctuation - every second punctuation mark, we have gotten
+                        #to the end of a Russian sentence/translation pair.
+    parseStart = 0 #this pointer will adjust as we iterate through the string to point at the beginning of the next example
+    for num in range(len(examplesString)):
+        if examplesString[num] == '.' or examplesString[num] == '!' or examplesString[num] == '?':
+            countPunctuation += 1
+            if countPunctuation % 2 == 0: # if the number of punctuation marks is even, we have a full example/translation pair
+                sentences.append(examplesString[parseStart:num+1]) #add the example/translation pair
+                parseStart = num + 1 #adjust our starting pointer so that it points to the beginning of the next example
+    for n in range(len(sentences)):
+        sentences[n] = sentences[n].split(' - ') #sentences now contains lists as its elements; each list element contains a russian sentence (index 0)
+                                                #and its translation (index 1).
+        sentences[n][0] = markSimpleStresses(sentences[n][0]) #add stresses to some basic words (this just 
+                                                            #facilitates the process of finding examples
+                                                            #that are properly stressed)
+        if checkSentenceForStress(sentences[n][0]):
+            stressedSentences.append(sentences[n])
+    return stressedSentences
 
 def getVerbList(page=0):
     """creates a list whose elements are lists with information about the verbs
@@ -141,65 +169,40 @@ def getVerbList(page=0):
                 pastForms.append(item) #need to implement a function to append these to the textList when incorporated into getVerbList
         for form in pastForms:
             verbInfoList.append(form)
-        #7 - grab at least 3 properly stressed examples and append them to the list
-        russianExamples = verbSoupObj.find_all('ul', class_='sentences')
-        examplesString = stripSoupList(russianExamples,True) #returns a string of all the text contents of ul items of class sentences
-        sentences = [] #the examples will be parsed from the examples string into this list
-        stressedSentences = [] #from the sentences list, the propperly stressed examples will be filtered into this list
-        countPunctuation = 0 #the senteces list will be parsed by punctuation - every second punctuation mark, we have gotten
-                            #to the end of a Russian sentence/translation pair.
-        parseStart = 0 #this pointer will adjust as we iterate through the string to point at the beginning of the next example
-        for num in range(len(examplesString)):
-            if examplesString[num] == '.' or examplesString[num] == '!' or examplesString[num] == '?':
-                countPunctuation += 1
-                if countPunctuation % 2 == 0: # if the number of punctuation marks is even, we have a full example/translation pair
-                    sentences.append(examplesString[parseStart:num+1]) #add the example/translation pair
-                    parseStart = num + 1 #adjust our starting pointer so that it points to the beginning of the next example
-        for n in range(len(sentences)):
-            sentences[n] = sentences[n].split(' - ') #sentences now contains lists as its elements; each list element contains a russian sentence (index 0)
-                                                    #and its translation (index 1).
-            sentences[n][0] = markSimpleStresses(sentences[n][0]) #add stresses to some basic words (this just 
-                                                                #facilitates the process of finding three examples
-                                                                #that are properly stressed)
-            if checkSentenceForStress(sentences[n][0]):
-                stressedSentences.append(sentences[n])
+        #7 - grab at least 4 properly stressed examples and append them to the list
+        stressedExamples = []
+        stressedExamples += getExamples(verbUrl)
         trycount = 0
-        while len(stressedSentences) < 6:
+        while len(stressedExamples) < 4:
             if trycount > 4:
-                print('failed to grab six examples for',verbInfoList[0] + ". Gathered",len(stressedSentences),"examples.")
+                logString = 'failed to grab enough examples for',verbInfoList[0] + ". Gathered",len(stressedExamples),"examples."
+                print(logString)
+                with open('verblog.txt','a') as verbLog:
+                    print(logString, file=verbLog)
                 break
             trycount += 1
-            print('less than siz examples; reloading')
-            verbPage = requests.get(verbUrl)
-            verbSoupObj = BeautifulSoup(verbPage.content, 'lxml') #creates a beautiful soup object from the verb's conjugation page
-            russianExamples = verbSoupObj.find_all('ul', class_='sentences')
-            examplesString = stripSoupList(russianExamples,True) #returns a string of all the text contents of ul items of class sentences
-            sentences = [] #the examples will be parsed from the examples string into this list
-            stressedSentences = [] #from the sentences list, the propperly stressed examples will be filtered into this list
-            countPunctuation = 0 #the senteces list will be parsed by punctuation - every second punctuation mark, we have gotten
-                                #to the end of a Russian sentence/translation pair.
-            parseStart = 0 #this pointer will adjust as we iterate through the string to point at the beginning of the next example
-            for num in range(len(examplesString)):
-                if examplesString[num] == '.' or examplesString[num] == '!' or examplesString[num] == '?':
-                    countPunctuation += 1
-                    if countPunctuation % 2 == 0: # if the number of punctuation marks is even, we have a full example/translation pair
-                        sentences.append(examplesString[parseStart:num+1]) #add the example/translation pair
-                        parseStart = num + 1 #adjust our starting pointer so that it points to the beginning of the next example
-            for n in range(len(sentences)):
-                sentences[n] = sentences[n].split(' - ') #sentences now contains lists as its elements; each list element contains a russian sentence (index 0)
-                                                        #and its translation (index 1).
-                sentences[n][0] = markSimpleStresses(sentences[n][0]) #add stresses to some basic words (this just 
-                                                                    #facilitates the process of finding three examples
-                                                                    #that are properly stressed)
-                if checkSentenceForStress(sentences[n][0]):
-                    stressedSentences.append(sentences[n])
-        if len(stressedSentences) > 0:
-            for item in stressedSentences:
+            print('not enought examples; refreshing page')
+            stressedExamples +=getExamples(verbUrl)
+        if len(stressedExamples) > 0:
+            for item in stressedExamples:
+#                client = boto3.client('polly', region_name='us-west-2', aws_access_key_id="somekeyhere", aws_secret_access_key="secretkey")
+#                response = client.synthesize_speech(OutputFormat='mp3',Text='это мой первый текст',VoiceId='Maxim')
                 verbInfoList.append(item)
         verbMasterList.append(verbInfoList)
-        
+
+            
+
 
 getVerbList()
+
+if not os.path.exists('./verbs'):
+    os.makedirs('./verbs')
+
+for index in range(len(verbMasterList)):
+    filename = './verbs/' + verbMasterList[index][2] + verbMasterList[index][0] + '.txt'
+    with open(filename, 'w') as verbFile:
+        for num in range(len(verbMasterList[index])):
+            print(verbMasterList[index][num], file=verbFile)
 
 
 """
