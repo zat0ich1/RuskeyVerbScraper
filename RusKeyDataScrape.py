@@ -9,6 +9,7 @@ verbMasterList = [] #this will be a master list containing
 verbFormsKey = ['infinitive','aspect','frequency','meaning','1st singular',
                 '2nd singular', '3rd singular', '1st plural','2nd plural',
                 '3rd plural', 'imperative singular','imperative plural',
+                'past masculine', 'past feminine', 'past neuter', 'past plural'
                 ] #this contains the name of each element appended for an individual verb
 commonEndUnstressed = ["его",
                        "Его",
@@ -67,6 +68,18 @@ transliterateDict = {'а':'a',
                      'я':'ja',
                      chr(769):''}
 
+def padThousands(num):
+    """num - a string representation of a number less than 1000; returns
+    the string representation with leading 0s to the thousands place"""
+    if len(num) == 1:
+        return "000" + num
+    elif len(num) == 2:
+        return "00" + num
+    elif len(num) == 3:
+        return "0" + num
+    elif len(num) == 4:
+        return num
+
 def countVowels(word):
     """takes a string and returns the number of Russian vowels"""
     #For use in checking whether a word has a stress
@@ -107,6 +120,12 @@ def markSimpleStresses(sentence):
             sentence[n] = "ну" + chr(769) + "жно"
         elif sentence[n] == "будет":
             sentence[n] = "бу" + chr(769) + "дет"
+        elif sentence[n] == "много":
+            sentence[n] = "мно" + chr(769) + "го"
+        elif sentence[n] == "Тома":
+            sentence[n] = "То" + chr(769) + "ма"
+        elif sentence[n] == "Томом":
+            sentence[n] = "То" + chr(769) + "мом"
         result = " ".join(sentence)
     return result
 
@@ -115,8 +134,7 @@ def transliterate(word):
     result = ""
     for letter in word:
         result += transliterateDict[letter]
-    return result
-        
+    return result    
 
 def stripSoupList(SoupObj, string=False):
     """takes a list generated from a Soup object and removes newlines and \xa0 
@@ -136,6 +154,7 @@ def stripSoupList(SoupObj, string=False):
             holder[i] = holder[i].replace(u'\xa0','')
             holder[i] = holder[i].replace(u'\n','')
         return holder
+
     
 def getExamples(someurl, verb):
     """takes url for a verb and the infinitive form for that verb; returns a list of properly stresed examples;
@@ -187,6 +206,7 @@ def getVerbList(page=0):
         verbText = verbRows[i].text[1:-1] #gets the text of the row (getting rid of html tags and stripping leading and ending newlines)
         verbInfoList = verbText.split('\n') #returns a list of the 3 elements in each row: freq #, infinitive, meaning
         verbInfoList[0],verbInfoList[1] = verbInfoList[1],verbInfoList[0] #swap the frequency to index 1 and the infinitive to index 0
+        verbInfoList[1] = padThousands(verbInfoList[1])
         #2 - go to the page of the verb listed in each row to obtain info about the aspect and conjugation, as well as examples
         verbUrl = baseUrl + verbRows[i].a['href'] #grab the link to the verb
         print('getting',verbUrl)
@@ -240,7 +260,7 @@ def getVerbList(page=0):
         stressedExamples += getExamples(verbUrl,verbInfoList[0])
         trycount = 0
         if examples != False:
-            while len(stressedExamples) < 4:
+            while len(stressedExamples) < 8:
                 if trycount > 4:
                     logString = 'failed to grab enough examples for ' + verbInfoList[0] + ". Gathered "+str(len(stressedExamples))+"examples."
                     print(logString)
