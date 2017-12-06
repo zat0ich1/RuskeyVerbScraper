@@ -40,7 +40,7 @@ for file in fileList:
         for i in range(16,len(verbFileLinesList)):
             verbExamplesList.append(verbFileLinesList[i].replace(u'\n','')) #adds each example and translation to the list without newlines
         print("sending " + verbFormsString + " to AWS Polly")
-        getAudio(fileNameStr=audioFileName, translateString=verbFormsString, mode='ssml', voiceName='Tatyana')
+        getAudio(fileNameStr=audioFileName, translateString=verbFormsString, voiceName='Tatyana',mode='ssml')
         for i in range(0,len(verbExamplesList)-1,2):
             print ('=' * 40)
             print (verbExamplesList[i])
