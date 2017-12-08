@@ -15,7 +15,7 @@ give, let, allow
 да́ло,дало́
 да́ли
 Я дала́ им ваш а́дрес.
-I gave them your (pl) address. (fem)
+I gave them your (pl) address. (female speaker)
 Он не дал мне вре́мени поду́мать.
 He didn't give me time to think.
 Да́йте взгляну́ть.
@@ -29,6 +29,6 @@ Tom gave it (fem) to me.
 Я хочу́ дать тебе́ э́то.
 I want to give you (sg) this.
 Дай мне твою́ ру́ку.
-Give me your (sg) arm.
+Give (sg) me your arm.
 Что ты мо́жешь нам дать?
 What can you (sg) give us?

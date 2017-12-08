@@ -15,7 +15,7 @@ begin, start, commence
 на́чало
 на́чали
 Начни́ с но́вого абза́ца здесь.
-Start a new paragraph here.
+Start (sg) a new paragraph here.
 Я начну́.
 I'll start.
 Начнём с пи́ва.
@@ -29,4 +29,4 @@ We need to start from scratch.
 Начни́те сначала.
 Start (pl) from the beginning.
 Начнём с хоро́ших новосте́й.
-Let's start with the good news.
+Let's start with the good news (pl).

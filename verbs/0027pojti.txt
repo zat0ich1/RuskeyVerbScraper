@@ -15,7 +15,7 @@ go, walk
 пошло́
 пошли́
 С кем ты пошёл на пляж?
-Who did you (sg) go to the beach with? (male)
+Who did you (sg) go to the beach with? (male speaker)
 Мне пойти́ поговори́ть с ней?
 Should I go talk to her?
 Пойди́те поговори́те с То́мом.

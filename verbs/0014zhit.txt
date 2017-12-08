@@ -17,7 +17,7 @@ live
 Э́то каса́ется всех, кто здесь живёт.
 It concerns all the people living there.
 Я не могу́ без тебя́ жить.
-I can't live without you.
+I can't live without you (sg).
 Том жил, Том жив, Том бу́дет жить.
 Tom lived, Tom is alive, Tom will live.
 Она́ живёт со свои́ми роди́телями.
@@ -27,4 +27,4 @@ I live in Tokyo.
 Я живу́ в ти́хом райо́не.
 I live in a quiet neighborhood.
 Я узна́л, где Том живёт.
-I found out where Tom lives. (male)
+I found out where Tom lives. (male speaker)

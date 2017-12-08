@@ -25,6 +25,6 @@ I'm not waiting.
 Я всё ещё жду мой зака́з.
 I'm still waiting for my order.
 Тебя́ все ждут.
-Everyone is waiting for you.
+Everyone is waiting for you (sg).
 Чего́ мы ждём?
 What are we waiting for?

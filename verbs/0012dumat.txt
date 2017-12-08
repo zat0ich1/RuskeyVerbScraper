@@ -17,7 +17,7 @@ think, consider, reflect, ponder, believe, intend, have the intention, hope, pla
 Ду́маешь, твоя́ лу́чше?
 Do you (sg) think yours (fem) is better?
 Я ду́мал, что смогу́ э́то сде́лать.
-I thought that (I) could do it.
+I thought that (I) could do it. (male speaker)
 Я ду́маю, Том умира́ет.
 I think Tom is dying.
 Ду́маю, э́то бы всё объясни́ло.
@@ -27,4 +27,4 @@ Do (you) (sg) think Tom knows?
 Я ду́мала, вы учи́тель.
 I (fm) thought you (pl) were a teacher.
 Вы ду́маете на францу́зском?
-Do you think in French?
+Do you (pl) think in French?
