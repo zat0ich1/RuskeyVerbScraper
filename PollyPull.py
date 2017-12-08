@@ -22,16 +22,20 @@ def containsI(sentence):
     else:
         return False
 
-def getAudio(fileNameStr, translateString, voiceName, mode='text'):
+def getAudio(fileNameStr, translateString, voiceName='Tatyana', mode='text'):
     """makes an amazon polly api call to save an mp3 file of tts for text in voiceID's voice;
         fileNameStr - a string for the filename (e.g. 'file1.mp3');
         translateString - a string of the text you want turned into audio (with or without ssml tags - see next param);
         mode - 'ssml' or 'text' (default);
         voice - a string of the voice name you wish to use; for Russian either 'Tatyana' or 'Maxim'"""
     response = client.synthesize_speech(OutputFormat='mp3',Text=translateString, TextType=mode, VoiceId=voiceName)
-    with open(fileNameStr, 'bw') as audiofile:
-        audiofile.write(response['AudioStream'].read())
-
+    if "AudioStream" in response:
+        with closing(response["AudioStrem"]) as voiceStream:
+            try:
+                with open(fileNameStr, 'bw') as audioFile:
+                    audioFile.write(voiceStream.read())
+            except:
+                print("An error occurred when requesting audio for",translateString)
 for file in fileList:
     audioFileName = './verbs/' + file[:-4] + '.mp3' #grabs text file name and replace .txt with .mp3
     with open('./verbs/'+ file, 'r') as verbFile: #open each file in the ./verbs directory
@@ -47,7 +51,7 @@ for file in fileList:
         for i in range(16,len(verbFileLinesList)):
             verbExamplesList.append(verbFileLinesList[i].replace(u'\n','')) #adds each example and translation to the list without newlines
         print("sending " + verbFormsString + " to AWS Polly")
-        getAudio(fileNameStr=audioFileName, translateString=verbFormsString, voiceName='Tatyana',mode='ssml')
+        getAudio(fileNameStr=audioFileName, translateString=verbFormsString, voiceName='Tatyana', mode='ssml')
         print('getting',verbFormsString,'as',audioFileName)
         for i in range(0,len(verbExamplesList)-1,2):
             print ('=' * 40)
@@ -60,8 +64,11 @@ for file in fileList:
                     print ('invalid selection')
                     voice = input (prompt)
                 if voice == 'm':
+                    print('getting',verbExamplesList[i],'as',exampleAudioFileName)
                     getAudio(fileNameStr=exampleAudioFileName, translateString=verbExamplesList[i], voiceName='Maxim')
-                    print('getting',verbExamplesList[i],'as',exampleAudioFileName)
                 elif voice == 'f' or voice == '':
-                    getAudio(fileNameStr=exampleAudioFileName, translateString=verbExamplesList[i], voiceName='Tatyana')
                     print('getting',verbExamplesList[i],'as',exampleAudioFileName)
+                    getAudio(fileNameStr=exampleAudioFileName, translateString=verbExamplesList[i])
+            else:
+                print('getting',verbExamplesList[i],'as',exampleAudioFileName)
+                getAudio(fileNameStr=exampleAudioFileName, translateString=verbExamplesList[i])
