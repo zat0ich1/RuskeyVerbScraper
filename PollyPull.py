@@ -1,5 +1,4 @@
 import os
-import requests
 import boto3
 from awskeys import *
 
@@ -11,7 +10,7 @@ from contextlib import closing
 prompt = "Male or female voice for this exapmle? Type f or enter for female, m for male: "
 fileList = os.listdir('./verbs')
 fileList.sort()
-print(os.getcwd)
+
 client = boto3.client('polly', region_name='us-west-2', aws_access_key_id=keyid, aws_secret_access_key=secretkey)
 
 def containsI(sentence):
@@ -30,10 +29,11 @@ def getAudio(fileNameStr, translateString, voiceName='Tatyana', mode='text'):
         voice - a string of the voice name you wish to use; for Russian either 'Tatyana' or 'Maxim'"""
     response = client.synthesize_speech(OutputFormat='mp3',Text=translateString, TextType=mode, VoiceId=voiceName)
     if "AudioStream" in response:
-        with closing(response["AudioStrem"]) as voiceStream:
+        with closing(response["AudioStream"]) as voiceStream:
             try:
                 with open(fileNameStr, 'bw') as audioFile:
                     audioFile.write(voiceStream.read())
+                    print('writing to file',fileNameStr)
             except:
                 print("An error occurred when requesting audio for",translateString)
 for file in fileList:
