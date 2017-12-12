@@ -8,6 +8,7 @@ Created on Sun Dec 10 10:27:24 2017
 
 import os
 import shelve
+import datetime
 
 
 class verb(object):
@@ -42,6 +43,8 @@ class verb(object):
             self.verbAudioList.append('./verbs/'+verbFileName[:-4]+'.mp3') #append conjugation audio last so that indexes for examples line up
             self.easinessFactor = 2.5 # these will be used with SM2 algorithm to
             self.lastInterval = 1     # find out when the object should next be studied
+            self.dateLastStudied = None # will be updated when first studied
+            
     def __str__(self):
         string = 'infinitive: {:>20}'.format(self.infinitive) + '\n' + \
         'frequency: {:>20}'.format(self.frequencyRank) + '\n' + \
@@ -66,7 +69,63 @@ class verb(object):
                 'audio file: {:>50}'.format(self.verbAudioList[i]) + '\n'
         string += 'conjugation audio file: {:>40}'.format(self.verbAudioList[len(self.verbAudioList)-1])
         return string
-    #need to write get methods and implement spaced rep algorithm
+    
+    def get_infinitive(self):
+        return self.infinitive
+    def get_aspect(self):
+        return self.aspect
+    def get_frequencyRank(self):
+        return self.frequencyRank
+    def get_meaning(self):
+        return self.meaning
+    def get_indicativeFirstSg(self):
+        return self.indicativeFirstSg
+    def get_indicativeSecondSg(self):
+        return self.indicativeSecondSg
+    def get_indicativeThirdSg(self):
+        return self.indicativeThirdSg
+    def get_indicativeFirstPl(self):
+        return self.indicativeFirstPl
+    def get_indicativeSecondPl(self):
+        return self.indicativeSecondPl
+    def get_indicativeThirdPl(self):
+        return self.indicativeThirdPl
+    def get_pastMasc(self):
+        return self.pastMasc
+    def get_pastFem(self):
+        return self.pastFem
+    def get_pastNeut(self):
+        return self.pastNeut
+    def get_pastPl(self):
+        return self.pastPl
+    def get_examplesList(self):
+        return self.examplesList
+    def get_examplesListTranslations(self):
+        return self.examplesListTranslations
+    def get_verbAudioList(self):
+        return self.verbAudioList
+    
+    def update_study_interval(self, score):
+        """score - a number between 0 and 1 representing performance on quiz;
+        updates the desired study interval (self.easinessFactor and self.lastInterval) using the SM2 algorithm"""
+        if (score*5) < 3.5:
+            self.lastInterval = 1
+        else:
+            if self.lastInterval == 1:
+                self.lastInterval = 2
+            elif self.lastInterval == 2:
+                self.lastInterval = 4
+            else:
+                self.easinessFactor += (0.1-(5-(score*5))*(0.08+(5-(score*5))*0.02))
+                if self.easinessFactor < 1.3:
+                    self.easinessFactor = 1.3
+                elif self.easinessFactor > 5:
+                    self.easinessFactor = 5
+                self.lastInterval *= self.easinessFactor
+                self.lastInterval = int(self.lastInterval)
+    def set_dateLastStudied(self):
+        self.dateLastStudied = datetime.date.today()
+        
 
 fileList = os.listdir('./verbs')
 fileList.sort()
