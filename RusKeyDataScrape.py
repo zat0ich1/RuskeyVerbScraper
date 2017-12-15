@@ -71,14 +71,7 @@ transliterateDict = {'а':'a',
 def padThousands(num):
     """num - a string representation of a number less than 1000; returns
     the string representation with leading 0s to the thousands place"""
-    if len(num) == 1:
-        return "000" + num
-    elif len(num) == 2:
-        return "00" + num
-    elif len(num) == 3:
-        return "0" + num
-    elif len(num) == 4:
-        return num
+    return num.zfill(4)
 
 def countVowels(word):
     """takes a string and returns the number of Russian vowels"""
