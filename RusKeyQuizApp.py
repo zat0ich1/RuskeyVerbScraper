@@ -10,53 +10,280 @@ import sys
 import os
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-def mainWindow(verbList, formsList, audioFile):
+
+class QtDisplay(QtGui.QLineEdit): #custom version of QLineEdit class that disables editing by default
+    def __init__(self):
+        QtGui.QLineEdit.__init__(self)
+        QtGui.QLineEdit.setReadOnly(self,True)
+
+class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center aligns, bolds, and sets vertical policy to fixed by default
+    def __init__(self, text):
+        QtGui.QLabel.__init__(self, text)
+        QboldFont = QtGui.QFont()
+        QboldFont.setBold(True)
+        self.setFont(QboldFont)
+        self.setAlignment(QtCore.Qt.AlignCenter)
+        self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
+
+class QtVFixedLabel(QtGui.QLabel): #custom version of the QLabel class that sets vertical policy to fixed by default
+    def __init__(self,text):
+        QtGui.QLabel.__init__(self, text)
+        self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
+
+def mainWindow():
     app =  QtGui.QApplication(sys.argv)
     QverbBrowser = QtGui.QWidget()
-    QverbBrowser.setGeometry(100,100,850,800)
-    # Grid layouts - main window is broken up into three sub grids nested within
-    # a lager grid as follows:
-    # |  1       |  2  |
-    # |        3       |
-    # subgrid 1 will contain the non past forms and info on aspect, etc. (nonPastBrowserGrid)
-    # subgrid 2 will contain the past forms (pastBrowserGrid)
-    # subgrid 3 will contain a list view with all verbs available, as well as
-    # a list view of verbs selected for quiz and buttons to add verbs to proposed quiz
-    QverbBrowserGrid = QtGui.QGridLayout()
-    QnonPastBrowserGrid = QtGui.QGridLayout()
-    QpastBrowserGrid = QtGui.QGridLayout()
-    QquizSelectorGrid = QtGui.QgridLayout()
-    QboldFont = QtGui.QFont
-    QboldFont.setBold(True)
-    QverbBrowserGrid.addWidget(QnonPastBrowserGrid, 1, 1, 1, 2)
-    QverbBrowserGrid.addWidget(QpastBrowserGrid,1,2)
-    QverbBrowserGrid.addWidget(QquizSelectorGrid,2,1,1,3)
+    QverbBrowser.setGeometry(100,100,800,800)
+    #--------------------------------------------
+    # GRID LAYOUT
+    #--------------------------------------------
+    # The grid layout consists of three subgrids inside of 5 main grid as follows. Some of these sub grids are further subdivided
+    #    ___________
+    #   | np   | p&i|     NP - non-past indicative forms
+    #   |______|____|     P&I - past and imperative forms
+    #   |vb | btn|q |     VB - verb browser (shows available verbs)
+    #   |___|____|__|     btn - buttons to add verbs to quiz
+    #                     q - list of verbs selected for quiz
+    QverbBrowserGrid = QtGui.QGridLayout() #main layout
     # ---------------------------------------------
-    # configuring the nonPastForms areas
-    # label:
-    QnonPastFieldLabel = QtGui.QLabel("Non-Past Forms")
-    QnonPastFieldLabel.setFont(QboldFont)
-    QnonPastFieldLabel.setAlignment(QtCore.Qt.AlignCenter)
-    QnonPastBrowserGrid.addWidget(QnonPastFieldLabel,1,1,1,4)
-    # play audio button:
+    # NON PAST FORMS AREA
+    #----------------------------------------------
+    #    ___________
+    #   |*NP***|    |     NP - non-past indicative forms - QNPISubGrid
+    #   |______|____|
+    #   |   |    |  |
+    #   |___|____|__|
+    #
+    QNPISubGrid = QtGui.QGridLayout()
+    QverbBrowserGrid.addLayout(QNPISubGrid, 0, 0, 1, 2)
+    #   this area is further subdivided as follows
+    # __________________________
+    # |                        |
+    # |                        |
+    # |      QinfoSubGrid      |
+    # |________________________|
+    # |                        |
+    # | QNPIFormsSubGrid       |
+    # |________________________|
+    #
+    QinfoSubGrid = QtGui.QGridLayout()
+    QNPIFormsSubGrid = QtGui.QGridLayout()
+    QNPISubGrid.addLayout(QinfoSubGrid,0,0,2,1)
+    QNPISubGrid.addLayout(QNPIFormsSubGrid,3,0,1,1)
+    #----------------------------------------------
+    # NON PAST INDICATIVE AREA LABEL:
+    #----------------------------------------------
+    QnonPastPaneLabel = QtSectionLabel("Non-Past Indicative Forms")
+    QinfoSubGrid.addWidget(QnonPastPaneLabel,0,0,1,4)
+    #-----------------------------------------------
+    # MEANING LABEL AND BOX
+    #-----------------------------------------------
+    QmeaningLabel = QtVFixedLabel("Meaning:")
+    QmeaningBox = QtDisplay()
+    QinfoSubGrid.addWidget(QmeaningLabel,2,0,1,1)
+    QinfoSubGrid.addWidget(QmeaningBox,2,1,1,3)
+    # ----------------------------------------------
+    # PLAY AUDIO BUTTON:
+    #-----------------------------------------------
     QplayAudioButton = QtGui.QPushButton("Play Audio")
-    QnonPastBrowserGrid.addWidget(QplayAudioButton,2,1,1,4)
-    #Infinitive label and form
-    QinfinitiveLabel = QtGui.QLabel("infinitive:")
-    QinfinitiveHolder = QtGui.QLineEdit(formsList[0])
-    QnonPastBrowserGrid.addWidget(QinfinitiveLabel,3,1,1,1)
-    QnonPastBrowserGrid.addWidget(QinfinitiveHolder,3,2,1,1)
-    #Aspect label and form
+    QinfoSubGrid.addWidget(QplayAudioButton,1,2,1,2)
+    #-----------------------------------------------
+    # INFINITIVE LABEL AND BOX
+    #-----------------------------------------------
+    QinfinitiveLabel = QtVFixedLabel("Infinitive:")
+    QinfinitiveBox = QtDisplay()
+    QinfoSubGrid.addWidget(QinfinitiveLabel,1,0,1,1)
+    QinfoSubGrid.addWidget(QinfinitiveBox,1,1,1,1)
 
-    nonPastBrowserGrid.addWidget()
-    verbBrowser.setLayout(verbBrowserGrid)
-    verbBrowser.setWindowTitle("RusKey Verb Browser")
-    verbBrowser.show()
+    #-----------------------------------------------
+    # ASPECT LABEL AND BOX
+    #-----------------------------------------------
+    QaspectLabel = QtVFixedLabel("Aspect:")
+    QaspectBox = QtDisplay()
+    QinfoSubGrid.addWidget(QaspectLabel,3,0,1,1)
+    QinfoSubGrid.addWidget(QaspectBox,3,1,1,1)
+    #-----------------------------------------------
+    # FEQUENCY LABEL AND BOX
+    #-----------------------------------------------
+    QfrequencyLabel = QtVFixedLabel("Frequency Number:")
+    QfrequencyBox = QtDisplay()
+    QinfoSubGrid.addWidget(QfrequencyLabel,3,2,1,1)
+    QinfoSubGrid.addWidget(QfrequencyBox,3,3,1,1)
+    #-----------------------------------------------
+    # 1ST PERSON SINGULAR INDICATIVE
+    #-----------------------------------------------
+    QfirstSgLabel = QtVFixedLabel("1st Person Singular:")
+    QfirstSgBox = QtDisplay()
+    QNPIFormsSubGrid.addWidget(QfirstSgLabel,0,0,1,1)
+    QNPIFormsSubGrid.addWidget(QfirstSgBox,1,0,1,1)
+    #-----------------------------------------------
+    # 2ND PERSON SINGULAR INDICATIVE
+    #-----------------------------------------------
+    QsecondSgLabel = QtVFixedLabel("2nd Person Singular:")
+    QsecondSgBox = QtDisplay()
+    QNPIFormsSubGrid.addWidget(QsecondSgLabel,2,0,1,1)
+    QNPIFormsSubGrid.addWidget(QsecondSgBox,3,0,1,1)
+    #-----------------------------------------------
+    # 3RD PERSON SINGULAR INDICATIVE
+    #-----------------------------------------------
+    QthirdSgLabel = QtVFixedLabel("3rd Person Singular:")
+    QthirdSgBox = QtDisplay()
+    QNPIFormsSubGrid.addWidget(QthirdSgLabel,4,0,1,1)
+    QNPIFormsSubGrid.addWidget(QthirdSgBox,5,0,1,1)
+    #-----------------------------------------------
+    # 1ST PERSON PLURAL INDICATIVE
+    #-----------------------------------------------
+    QfirstPlLabel = QtVFixedLabel("1st Person Plural:")
+    QfirstPlBox = QtDisplay()
+    QNPIFormsSubGrid.addWidget(QfirstPlLabel,0,2,1,1)
+    QNPIFormsSubGrid.addWidget(QfirstPlBox,1,2,1,1)
+    #-----------------------------------------------
+    # 2ND PERSON PLURAL INDICATIVE
+    #-----------------------------------------------
+    QsecondPlLabel = QtVFixedLabel("2nd Person Plural:")
+    QsecondPlBox = QtDisplay()
+    QNPIFormsSubGrid.addWidget(QsecondPlLabel,2,2,1,1)
+    QNPIFormsSubGrid.addWidget(QsecondPlBox,3,2,1,1)
+    #-----------------------------------------------
+    # 3rd PERSON PLURAL INDICATIVE
+    #-----------------------------------------------
+    QthirdPlLabel = QtVFixedLabel("3rd Person Plural:")
+    QthirdPlBox = QtDisplay()
+    QNPIFormsSubGrid.addWidget(QthirdPlLabel,4,2,1,1)
+    QNPIFormsSubGrid.addWidget(QthirdPlBox,5,2,1,1)
+
+
+
+
+    # ---------------------------------------------
+    # PAST AND IMPERATIVE FORMS AREA
+    #----------------------------------------------
+    #    ___________
+    #   |      |P&I*|     P&I - Past and Imperative Forms - QPastSubGrid
+    #   |______|____|
+    #   |   |    |  |
+    #   |___|____|__|
+    #
+    QPastSubGrid = QtGui.QGridLayout()
+    QverbBrowserGrid.addLayout(QPastSubGrid,0,2,1,1)
+    #----------------------------------------------
+    # PAST AND IMPERATIVE AREA LABEL:
+    #----------------------------------------------
+    QPastPaneLabel = QtSectionLabel("Imperative and Past Forms")
+    QPastSubGrid.addWidget(QPastPaneLabel,0,0,1,2)
+    #-----------------------------------------------
+    # IMPERATIVE SINGULAR
+    #-----------------------------------------------
+    QimperativeSgLabel = QtVFixedLabel("Imperative Singular:")
+    QimperativeSgBox = QtDisplay()
+    QPastSubGrid.addWidget(QimperativeSgLabel,1,0,1,1)
+    QPastSubGrid.addWidget(QimperativeSgBox,1,1,1,1)
+    #-----------------------------------------------
+    # IMPERATIVE PLURAL
+    #-----------------------------------------------
+    QimperativePlLabel = QtVFixedLabel("Imperative Plural:")
+    QimperativePlBox = QtDisplay()
+    QPastSubGrid.addWidget(QimperativePlLabel,2,0,1,1)
+    QPastSubGrid.addWidget(QimperativePlBox,2,1,1,1)
+    #-----------------------------------------------
+    # PAST MASCULINE
+    #-----------------------------------------------
+    QpastMascLabel = QtVFixedLabel("Past Masculine:")
+    QpastMascBox = QtDisplay()
+    QPastSubGrid.addWidget(QpastMascLabel,3,0,1,1)
+    QPastSubGrid.addWidget(QpastMascBox,3,1,1,1)
+    #-----------------------------------------------
+    # PAST FEMININE
+    #-----------------------------------------------
+    QpastFemLabel = QtVFixedLabel("Past Feminine:")
+    QpastFemBox = QtDisplay()
+    QPastSubGrid.addWidget(QpastFemLabel,4,0,1,1)
+    QPastSubGrid.addWidget(QpastFemBox,4,1,1,1)
+    #-----------------------------------------------
+    # PAST NEUTER
+    #-----------------------------------------------
+    QpastNeutLabel = QtVFixedLabel("Past Neuter:")
+    QpastNeutBox = QtDisplay()
+    QPastSubGrid.addWidget(QpastNeutLabel,5,0,1,1)
+    QPastSubGrid.addWidget(QpastNeutBox,5,1,1,1)
+    #-----------------------------------------------
+    # PAST PLURAL
+    #-----------------------------------------------
+    QpastPlLabel = QtVFixedLabel("Past Plural:")
+    QpastPlBox = QtDisplay()
+    QPastSubGrid.addWidget(QpastPlLabel,6,0,1,1)
+    QPastSubGrid.addWidget(QpastPlBox,6,1,1,1)
+
+    #-----------------------------------------------
+    # BOTTOM SECIONS
+    #-----------------------------------------------
+    #    ___________
+    #   |      |    |     QbottomGrid - houses the three subdivisions of the bottom sections
+    #   |______|____|
+    #   |***********|
+    #   |___________|
+    #
+    QbottomGrid = QtGui.QGridLayout()
+    QverbBrowserGrid.addLayout(QbottomGrid,1,0,1,3)
+    #-----------------------------------------------
+    # VERB BROWSER AREA
+    #-----------------------------------------------
+    #    ___________
+    #   |      |    |
+    #   |______|____|
+    #   |vb*|    |  |     VB - verb browser (shows available verbs)
+    #   |___|____|__|
+    #
+    #-----------------------------------------------
+    QverbListGrid = QtGui.QGridLayout()
+    QbottomGrid.addLayout(QverbListGrid,0,0,1,1)
+    QverbListLabel = QtSectionLabel("Browse Available Verbs")
+    QverbList = QtGui.QListWidget()
+    QverbListGrid.addWidget(QverbListLabel,0,0,1,1)
+    QverbListGrid.addWidget(QverbList,1,0,1,1)
+    #------------------------------------------------
+    #    ___________
+    #   |      |    |
+    #   |______|____|
+    #   |   | btn|  |
+    #   |___|____|__|     btn - buttons to add verbs to quiz
+    #
+    #------------------------------------------------
+    QbuttonAreaGrid = QtGui.QGridLayout()
+    QbottomGrid.addLayout(QbuttonAreaGrid,0,1,1,1)
+    QdisplayVerbBtn = QtGui.QPushButton("View Conjugation")
+    QautoQuizBtn = QtGui.QPushButton("Quiz on Most Overdue Items (auto)")
+    QcustomQuizBtn = QtGui.QPushButton("Quiz on Custom List -->")
+    QaddToListBtn = QtGui.QPushButton("-- Add to Quiz List -->")
+    QremoveFromListBtn = QtGui.QPushButton("<-- Remove from Quiz List --")
+    QbuttonAreaGrid.addWidget(QdisplayVerbBtn,0,0,1,1)
+    QbuttonAreaGrid.addWidget(QautoQuizBtn,1,0,1,1)
+    QbuttonAreaGrid.addWidget(QcustomQuizBtn,2,0,1,1)
+    QbuttonAreaGrid.addWidget(QaddToListBtn,3,0,1,1)
+    QbuttonAreaGrid.addWidget(QremoveFromListBtn,4,0,1,1)
+    #-------------------------------------------------
+    #    ___________
+    #   |      |    |
+    #   |______|____|
+    #   |   |    | q|
+    #   |___|____|__|
+    #                     q - list of verbs selected for custom quiz
+    #-------------------------------------------------
+    QcustomQuizGrid = QtGui.QGridLayout()
+    QbottomGrid.addLayout(QcustomQuizGrid,0,2,1,1)
+    QcustomQuizLabel = QtSectionLabel("Custom Quiz List")
+    QcustomQuizList = QtGui.QListWidget()
+    QcustomQuizGrid.addWidget(QcustomQuizLabel,0,0,1,1)
+    QcustomQuizGrid.addWidget(QcustomQuizList,1,0,1,1)
+
+    QverbBrowser.setLayout(QverbBrowserGrid)
+    QverbBrowser.setWindowTitle("RusKey Verb Browser")
+    QverbBrowser.show()
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
-    window(['this','is','a','list'])
+    mainWindow()
 
 verbList = os.listdir('./verbs')
 verbList.sort()
