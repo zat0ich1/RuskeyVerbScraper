@@ -10,6 +10,7 @@ import os
 import shelve
 import datetime
 import random
+from PyQt4 import QtCore
 
 
 class verb(object):
@@ -168,9 +169,12 @@ class verb(object):
         self.easinessFactor[user] = 2.5
         self.lastInterval[user] = 1
         self.previouslyStudied [user] = False
+        self.dateLastStudied[user] = QtCore.QDate.currentDate()
     def update_study_interval(self, user, score):
         """user - a string of the name of the user whose interval is to be updated; score - a number between 0 and 1 representing performance on quiz;
         updates the desired study interval for the user (self.easinessFactor and self.lastInterval) using the SM2 algorithm"""
+        self.previouslyStudied[user] = True
+        self.set_dateLastStudied(user)
         if (score*5) < 3.5:
             self.lastInterval[user] = 1
         else:
@@ -186,12 +190,46 @@ class verb(object):
                     self.easinessFactor[user] = 5
                 self.lastInterval[user] *= self.easinessFactor[user]
                 self.lastInterval[user] = int(self.lastInterval[user])
-    def set_dateLastStudied(self):
-        self.dateLastStudied = datetime.date.today()
+    def set_dateLastStudied(self, user, date=QtCore.QDate.currentDate()):
+        """user - the user whose date last studied you want to set; date - QDate object - defaults to current date;
+        updates dateLastStudied for the specified user to the specified date"""
+        self.dateLastStudied[user] = date
+    def get_dateLastStudied(self, user):
+        """user - the user whose dateLastStudied you wish to retrieve; returns a QDate object for the date last studied"""
+        return self.dateLastStudied.get(user, QtCore.QDate.currentDate())
+    def get_nextStudyDate(self,user):
+        """returns the date on which the user should next study a verb according to the SM2 algorithm;
+        if this date is before the current date, returns the phrase "Overdue"; if the user has not yet studied a verb
+        returns the phrase 'Not yet studied'"""
+        if not self.was_previouslyStudied(user):
+            return "Not yet studied"
+        else:
+            if self.is_overdue(user):
+                return "Overdue"
+            else:
+                displayDate = self.get_dateLastStudied(user).addDays(self.lastInterval[user])
+                displayDate.toString('MM dd yyyy')
+                return displayDate.toString('MM/dd/yyyy')
     def is_overdue(self, user):
-        #need to write some code to compare date last studied with interval
-        pass
+        """returns True if a verb is overdue; False otherwise"""
+        if not self.was_previouslyStudied(user):
+            return False
+        elif self.get_dateLastStudied(user).addDays(self.lastInterval[user]) < QtCore.QDate.currentDate():
+            return True
+        else:
+            return False
 
+byt = verb('0001byt.txt')
+byt.addUser('Tim')
+byt.update_study_interval('Tim',0.8)
+byt.update_study_interval('Tim',0.8)
+byt.update_study_interval('Tim',0.8)
+byt.update_study_interval('Tim',0.8)
+byt.addUser('Anna')
+byt.update_study_interval('Anna',0.9)
+byt.update_study_interval('Anna',0.9)
+byt.update_study_interval('Anna',0.9)
+byt.update_study_interval('Anna',0.5)
 
 fileList = os.listdir('./verbs')
 fileList.sort()
