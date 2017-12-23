@@ -219,6 +219,8 @@ class verb(object):
         else:
             return False
 
+#testing -----
+
 byt = verb('0001byt.txt')
 byt.addUser('Tim')
 byt.update_study_interval('Tim',0.8)
