@@ -9,6 +9,7 @@ Created on Sun Dec 10 10:27:24 2017
 import os
 import shelve
 import datetime
+import random
 
 
 class verb(object):
@@ -41,10 +42,11 @@ class verb(object):
                 audioFileName = './verbs/' + verbFileName[:-4] + str(i) + '.mp3'
                 self.verbAudioList.append(audioFileName)
             self.verbAudioList.append('./verbs/'+verbFileName[:-4]+'.mp3') #append conjugation audio last so that indexes for examples line up
-            self.easinessFactor = 2.5 # these will be used with SM2 algorithm to
-            self.lastInterval = 1     # find out when the object should next be studied
-            self.dateLastStudied = None # will be updated when first studied
-            
+            self.easinessFactor = {} # these dictionaries will be used with SM2 algorithm to
+            self.lastInterval = {}     # find out when the object should next be studied; keys are user names
+            self.dateLastStudied = {} # will be updated when first studied
+            self.previouslyStudied = {}
+
     def __str__(self):
         string = 'infinitive: {:>20}'.format(self.infinitive) + '\n' + \
         'frequency: {:>20}'.format(self.frequencyRank) + '\n' + \
@@ -69,63 +71,127 @@ class verb(object):
                 'audio file: {:>50}'.format(self.verbAudioList[i]) + '\n'
         string += 'conjugation audio file: {:>40}'.format(self.verbAudioList[len(self.verbAudioList)-1])
         return string
-    
+
     def get_infinitive(self):
+        """returns a string of the infinitive form of the verb"""
         return self.infinitive
     def get_aspect(self):
+        """returns a string representing the aspect of the verb"""
         return self.aspect
     def get_frequencyRank(self):
+        """returns a string representing the frequency number for the verb"""
         return self.frequencyRank
     def get_meaning(self):
+        """returns a string containing common translations of the verb"""
         return self.meaning
     def get_indicativeFirstSg(self):
+        """returns a string containing the non-past indicative 1st person singular form of the verb"""
         return self.indicativeFirstSg
     def get_indicativeSecondSg(self):
+        """returns a string containing the non-past indicative 2nd person singular form of the verb"""
         return self.indicativeSecondSg
     def get_indicativeThirdSg(self):
+        """returns a string containing the non-past indicative 3rd person singular form of the verb"""
         return self.indicativeThirdSg
     def get_indicativeFirstPl(self):
+        """returns a string containing the non-past indicative 1st person plural form of the verb"""
         return self.indicativeFirstPl
     def get_indicativeSecondPl(self):
+        """returns a string containing the non-past indicative 2nd person plural form of the verb"""
         return self.indicativeSecondPl
     def get_indicativeThirdPl(self):
+        """returns a string containing the non-past indicative 3rd person plural form of the verb"""
         return self.indicativeThirdPl
+    def get_imperativeSg(self):
+        """returns a string containing the imperative singular form of the verb"""
+        return self.imperativeSg
+    def get_imperativePl(self):
+        """returns a string containing the imperative plural form of the verb"""
+        return self.imperativePl
     def get_pastMasc(self):
+        """returns a string containing the past masculine form of the verb"""
         return self.pastMasc
     def get_pastFem(self):
+        """returns a string containing the past feminine form of the verb"""
         return self.pastFem
     def get_pastNeut(self):
+        """returns a string containing the past neuter form of the verb"""
         return self.pastNeut
     def get_pastPl(self):
+        """returns a string containing the past plural form of the verb"""
         return self.pastPl
-    def get_examplesList(self):
-        return self.examplesList
+    def get_examplesList(self, stripPunctuation=False):
+        """takes an optional parameter to strip punctuation marks; returns a list of the russian example sentences; the indices for these match the indices in the corresponding translation list"""
+        if not stripPunctuation:
+            return self.examplesList
+        else:
+            strippedList = []
+            for string in self.examplesList[:]:
+                string = string.replace(',','')
+                string = string.replace('.','')
+                string = string.replace(':','')
+                string = string.replace(';','')
+                string = string.replace('?','')
+                string = string.replace('!','')
+                strippedList.append(string)
+            return strippedList
     def get_examplesListTranslations(self):
+        """returns a list of translations of the russian example sentences; the indices for these match the indices in the corresponding examples list"""
         return self.examplesListTranslations
     def get_verbAudioList(self):
+        """returns a list of the audio file names for the verb. The indices should match the example sentence list indices, excepting the final item, which is the audio for the conjugation"""
         return self.verbAudioList
-    
-    def update_study_interval(self, score):
-        """score - a number between 0 and 1 representing performance on quiz;
-        updates the desired study interval (self.easinessFactor and self.lastInterval) using the SM2 algorithm"""
+    def get_conjugationAudio(self):
+        """returns the name of the conjugation audio file"""
+        return self.verbAudioList[-1]
+    def get_randomizedExamplesList(self):
+        """returns a list of randomized example sentences; each member of the list is a list of the words in the example in random order\n
+        e.g. the example sentence 'Я была с ним честной' becomes ['Я', 'с', 'была', 'ним', 'честной'] (this list would be a member of the list returned)"""
+        randomizedExamples = []
+        for string in self.examplesList:
+            string = string.replace(',','')
+            string = string.replace('.','')
+            string = string.replace(':','')
+            string = string.replace(';','')
+            string = string.replace('?','')
+            string = string.replace('!','')
+            sentenceList = string.split(' ')
+            random.shuffle(sentenceList)
+            randomizedExamples.append(sentenceList)
+        return randomizedExamples
+    def was_previouslyStudied(self, user):
+        """returns the value of self.previouslyStudied for the user specified; used to determine whether a user should be presented with familiarization
+        screens prior to quiz initiation"""
+        return self.previouslyStudied[user]
+    def addUser(self, user):
+        """adds a user to the dictionaries used for the spaced repetition algorithm and preloads default values in these dictionaries"""
+        self.easinessFactor[user] = 2.5
+        self.lastInterval[user] = 1
+        self.previouslyStudied [user] = False
+    def update_study_interval(self, user, score):
+        """user - a string of the name of the user whose interval is to be updated; score - a number between 0 and 1 representing performance on quiz;
+        updates the desired study interval for the user (self.easinessFactor and self.lastInterval) using the SM2 algorithm"""
         if (score*5) < 3.5:
-            self.lastInterval = 1
+            self.lastInterval[user] = 1
         else:
-            if self.lastInterval == 1:
-                self.lastInterval = 2
-            elif self.lastInterval == 2:
-                self.lastInterval = 4
+            if self.lastInterval.get(user, 1) == 1:
+                self.lastInterval[user] = 2
+            elif self.lastInterval[user] == 2:
+                self.lastInterval[user] = 4
             else:
-                self.easinessFactor += (0.1-(5-(score*5))*(0.08+(5-(score*5))*0.02))
-                if self.easinessFactor < 1.3:
-                    self.easinessFactor = 1.3
-                elif self.easinessFactor > 5:
-                    self.easinessFactor = 5
-                self.lastInterval *= self.easinessFactor
-                self.lastInterval = int(self.lastInterval)
+                self.easinessFactor[user] += (0.1-(5-(score*5))*(0.08+(5-(score*5))*0.02))
+                if self.easinessFactor[user] < 1.3:
+                    self.easinessFactor[user] = 1.3
+                elif self.easinessFactor[user] > 5:
+                    self.easinessFactor[user] = 5
+                self.lastInterval[user] *= self.easinessFactor[user]
+                self.lastInterval[user] = int(self.lastInterval[user])
     def set_dateLastStudied(self):
         self.dateLastStudied = datetime.date.today()
-        
+    def is_overdue(self, user):
+        #need to write some code to compare date last studied with interval
+        pass
+
 
 fileList = os.listdir('./verbs')
 fileList.sort()
