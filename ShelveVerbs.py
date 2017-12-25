@@ -47,6 +47,7 @@ class verb(object):
             self.lastInterval = {}     # find out when the object should next be studied; keys are user names
             self.dateLastStudied = {} # will be updated when first studied
             self.previouslyStudied = {}
+            self.dueDate = {}
 
     def __str__(self):
         string = 'infinitive: {:>20}'.format(self.infinitive) + '\n' + \
@@ -160,16 +161,17 @@ class verb(object):
             random.shuffle(sentenceList)
             randomizedExamples.append(sentenceList)
         return randomizedExamples
-    def was_previouslyStudied(self, user):
-        """returns the value of self.previouslyStudied for the user specified; used to determine whether a user should be presented with familiarization
-        screens prior to quiz initiation"""
-        return self.previouslyStudied[user]
     def addUser(self, user):
         """adds a user to the dictionaries used for the spaced repetition algorithm and preloads default values in these dictionaries"""
         self.easinessFactor[user] = 2.5
         self.lastInterval[user] = 1
         self.previouslyStudied [user] = False
         self.dateLastStudied[user] = QtCore.QDate.currentDate()
+        self.dueDate[user] = self.dateLastStudied[user].addDays(self.lastInterval[user])
+    def was_previouslyStudied(self, user):
+        """returns the value of self.previouslyStudied for the user specified; used to determine whether a user should be presented with familiarization
+        screens prior to quiz initiation"""
+        return self.previouslyStudied[user]
     def update_study_interval(self, user, score):
         """user - a string of the name of the user whose interval is to be updated; score - a number between 0 and 1 representing performance on quiz;
         updates the desired study interval for the user (self.easinessFactor and self.lastInterval) using the SM2 algorithm"""
@@ -190,6 +192,7 @@ class verb(object):
                     self.easinessFactor[user] = 5
                 self.lastInterval[user] *= self.easinessFactor[user]
                 self.lastInterval[user] = int(self.lastInterval[user])
+        self.dueDate[user] = self.dateLastStudied[user].addDays(self.lastInterval[user])
     def set_dateLastStudied(self, user, date=QtCore.QDate.currentDate()):
         """user - the user whose date last studied you want to set; date - QDate object - defaults to current date;
         updates dateLastStudied for the specified user to the specified date"""
@@ -207,17 +210,27 @@ class verb(object):
             if self.is_overdue(user):
                 return "Overdue"
             else:
-                displayDate = self.get_dateLastStudied(user).addDays(self.lastInterval[user])
+                displayDate = self.dueDate[user]
                 displayDate.toString('MM dd yyyy')
+                if displayDate == QtCore.QDate.currentDate():
+                    return("Due today!")
                 return displayDate.toString('MM/dd/yyyy')
     def is_overdue(self, user):
         """returns True if a verb is overdue; False otherwise"""
         if not self.was_previouslyStudied(user):
             return False
-        elif self.get_dateLastStudied(user).addDays(self.lastInterval[user]) < QtCore.QDate.currentDate():
+        elif self.get_daysOverdue(user) > 0:
             return True
         else:
             return False
+    def get_daysOverdue(self,user):
+        """returns the difference between today's date and the next study date"""
+        return self.dueDate[user].daysTo(QtCore.QDate.currentDate())
+    def get_dueDate(self,user):
+        """returns a the due date for a verb for the given user (a QDate object)"""
+        return self.dueDate[user]
+    def set_dueDate(self,user):
+        self.dueDate[user] = self.dateLastStudied[user].addDays(self.lastInterval[user])
 
 #testing -----
 delimiter = '=========================================='
@@ -303,32 +316,148 @@ skazatExList = skazat.get_examplesList()
 skazatExListStripped = skazat.get_examplesList(True)
 skazatTransList = skazat.get_examplesListTranslations()
 skazatFileList = skazat.get_verbAudioList()
+print(delimiter)
 for i in range(len(bytExList)):
     print(bytExList[i])
     print(bytExListStripped[i])
     print(bytTransList[i])
     print(bytFileList[i])
+    print(delimiter)
 for i in range(len(skazatExList)):
     print(skazatExList[i])
     print(skazatExListStripped[i])
     print(skazatTransList[i])
     print(skazatFileList[i])
-
-
+    print(delimiter)
+print("CONJUGATION AUDIO FOR BYT AND SKAZAT")
+print(byt.get_conjugationAudio())
+print(skazat.get_conjugationAudio())
+print(delimiter)
+print("RANDOMIZED STRIPPED EXAMPLES; BYT AND SKAZAT")
+bytRandomExList = byt.get_randomizedExamplesList()
+skazatRandomExList = skazat.get_randomizedExamplesList()
+for example in bytRandomExList:
+    print(example)
+print(delimiter)
+for example in skazatRandomExList:
+    print(example)
+print(delimiter)
+print("USER BASED TESTS - USERS TIM AND ANNA")
 byt.addUser('Tim')
 skazat.addUser('Tim')
 byt.addUser('Anna')
 skazat.addUser('Anna')
+print("BEFORE STUDY; WAS PREVIOUSLY STUDIED SHOULD RETURN FALSE")
+print("TIM (BYT):", byt.was_previouslyStudied('Tim'))
+print("ANNA (BYT):", byt.was_previouslyStudied('Anna'))
+print("TIM (SKAZAT):", skazat.was_previouslyStudied('Tim'))
+print("ANNA (SKAZAT):", skazat.was_previouslyStudied('Anna'))
+print("DUE DATE SHOULD BE INTIALIZED FOR THESE USERS TO ONE DAY FROM NOW")
+print("TIM (BYT):", byt.get_dueDate('Tim'))
+print("ANNA (BYT):", byt.get_dueDate('Anna'))
+print("TIM (SKAZAT):", skazat.get_dueDate('Tim'))
+print("ANNA (SKAZAT):", skazat.get_dueDate('Anna'))
+print("TIM AND ANNA STUDY BYT AND SKAZAT AND SCORE 80")
 byt.update_study_interval('Tim',0.8)
-byt.update_study_interval('Tim',0.8)
-byt.update_study_interval('Tim',0.8)
-byt.update_study_interval('Tim',0.8)
-
-byt.update_study_interval('Anna',0.9)
-byt.update_study_interval('Anna',0.9)
-byt.update_study_interval('Anna',0.9)
-byt.update_study_interval('Anna',0.5)
-
+byt.update_study_interval('Anna',0.8)
+skazat.update_study_interval('Tim',0.8)
+skazat.update_study_interval('Anna',0.8)
+print("WAS PREVIOUSLY STUDIED SHOULD NOW RETURN TRUE")
+print("TIM (BYT):", byt.was_previouslyStudied('Tim'))
+print("ANNA (BYT):", byt.was_previouslyStudied('Anna'))
+print("TIM (SKAZAT):", skazat.was_previouslyStudied('Tim'))
+print("ANNA (SKAZAT):", skazat.was_previouslyStudied('Anna'))
+print("DUE DATE SHOULD BE UPDATED FROM PREVIOUS VALUE:")
+print("TIM (BYT):", byt.get_dueDate('Tim'))
+print("ANNA (BYT):", byt.get_dueDate('Anna'))
+print("TIM (SKAZAT):", skazat.get_dueDate('Tim'))
+print("ANNA (SKAZAT):", skazat.get_dueDate('Anna'))
+print("IS OVERDUE SHOULD RETURN FALSE")
+print("TIM (BYT):", byt.is_overdue('Tim'))
+print("TIM (SKAZAT):", skazat.is_overdue('Tim'))
+print("ANNA (BYT):",byt.is_overdue('Anna'))
+print("ANNA (SKAZAT):",skazat.is_overdue('Anna'))
+print("TESTING SETTING AND GETTING DATE; SET DATE LAST STUDIED TO 2 WEEKS AGO")
+twoWeeksAgo = QtCore.QDate.currentDate()
+twoWeeksAgo = twoWeeksAgo.addDays(-14)
+byt.set_dateLastStudied('Tim',twoWeeksAgo)
+byt.set_dateLastStudied('Anna',twoWeeksAgo)
+skazat.set_dateLastStudied('Tim',twoWeeksAgo)
+skazat.set_dateLastStudied('Anna',twoWeeksAgo)
+byt.set_dueDate('Tim')
+byt.set_dueDate('Anna')
+skazat.set_dueDate('Tim')
+skazat.set_dueDate('Anna')
+print("TIM (BYT) - SHOULD RETURN TWO WEEKS AGO")
+print(byt.get_dateLastStudied('Tim'))
+print('TIM (SKAZAT) - SHOULD RETURN TWO WEEKS AGO')
+print(skazat.get_dateLastStudied('Tim'))
+print('ANNA (BYT) - SHOULD RETURN TWO WEEKS AGO')
+print(byt.get_dateLastStudied('Anna'))
+print('ANNA (SKAZAT) - SHOULD RETURN TWO WEEKS AGO')
+print(skazat.get_dateLastStudied('Anna'))
+print("BYT AND SKAZAT SHOULD BOTH BE OVERDUE NOW THAT THE DATE LAST STUDIED HAS BEEN SET TO TWO WEEKS AGO")
+print("GET NEXT STUDY DATE FOR TIM (BYT) - SHOULD RETURN OVERDUE")
+print(byt.get_nextStudyDate('Tim'))
+print("GET NEXT STUDY DATE FOR TIM (SKAZAT) - SHOULD RETURN OVERDUE")
+print(skazat.get_nextStudyDate('Tim'))
+print("GET NEXT STUDY DATE FOR ANNA (BYT) - SHOULD RETURN OVERDUE")
+print(byt.get_nextStudyDate('Anna'))
+print("GET NEXT STUDY DATE FOR ANNA (SKAZAT) - SHOULD RETURN OVERDUE")
+print(skazat.get_nextStudyDate('Anna'))
+print("IS OVERDUE FUNCTION TIM (BYT) - SHOULD RETURN TRUE")
+print(byt.is_overdue('Tim'))
+print("IS OVERDUE FUNCTION TIM (SKAZAT) - SHOULD RETURN TRUE")
+print(skazat.is_overdue('Tim'))
+print("IS OVERDUE FUNCTION ANNA (BYT) - SHOULD RETURN TRUE")
+print(byt.is_overdue('Anna'))
+print("IS OVERDUE FUNCTION ANNA (SKAZAT) - SHOULD RETURN TRUE")
+print(skazat.is_overdue('Anna'))
+print("GET DAYS OVERDUE; SHOULD RETURN AN INT > 0")
+print("TIM (BYT):",byt.get_daysOverdue('Tim'))
+print("TIM (SKAZAT):",skazat.get_daysOverdue('Tim'))
+print("ANNA (BYT):",byt.get_daysOverdue('Anna'))
+print("ANNA (SKAZAT):", skazat.get_daysOverdue('Anna'))
+print("SETTING STUDY INTERVAL TO TWO WEEKS SO THAT THE VERBS ARE DUE TODAY")
+byt.lastInterval['Tim'] = 14
+byt.lastInterval['Anna'] = 14
+skazat.lastInterval['Tim'] = 14
+skazat.lastInterval['Anna'] = 14
+byt.set_dueDate('Tim')
+byt.set_dueDate('Anna')
+skazat.set_dueDate('Anna')
+skazat.set_dueDate('Tim')
+print('GET NEXT STUDY DATE FUNCTIONS SHOULD NOW RETURN DUE TODAY')
+print("GET NEXT STUDY DATE FUNCTION TIM (BYT)")
+print(byt.get_nextStudyDate('Tim'))
+print("GET NEXT STUDY DATE FUNCTION TIM (SKAZAT)")
+print(skazat.get_nextStudyDate('Tim'))
+print("GET NEXT STUDY DATE FUNCTION ANNA (BYT)")
+print(byt.get_nextStudyDate('Anna'))
+print("GET NEXT STUDY DATE FUNCTION ANNA (SKAZAT)")
+print(skazat.get_nextStudyDate('Anna'))
+print("SETTING STUDY INTERVAL TO 5 WEEKS SO THAT THE VERBS ARE DUE IN THREE WEEKS")
+byt.lastInterval['Tim'] = 35
+byt.lastInterval['Anna'] = 35
+skazat.lastInterval['Tim'] = 35
+skazat.lastInterval['Anna'] = 35
+byt.set_dueDate('Tim')
+byt.set_dueDate('Anna')
+skazat.set_dueDate('Tim')
+skazat.set_dueDate('Anna')
+print("GET NEXT STUDY DATE FUNCTION TIM (BYT)")
+print(byt.get_nextStudyDate('Tim'))
+print("GET NEXT STUDY DATE FUNCTION TIM (SKAZAT)")
+print(skazat.get_nextStudyDate('Tim'))
+print("GET NEXT STUDY DATE FUNCTION ANNA (BYT)")
+print(byt.get_nextStudyDate('Anna'))
+print("GET NEXT STUDY DATE FUNCTION ANNA (SKAZAT)")
+print(skazat.get_nextStudyDate('Anna'))
+print("GET DAYS OVERDUE - SHOULD RETURN AN INT < 0")
+print("TIM (BYT):",byt.get_daysOverdue('Tim'))
+print("TIM (SKAZAT):",skazat.get_daysOverdue('Tim'))
+print("ANNA (BYT):",byt.get_daysOverdue('Anna'))
+print("ANNA (SKAZAT):", skazat.get_daysOverdue('Anna'))
 fileList = os.listdir('./verbs')
 fileList.sort()
 
