@@ -122,20 +122,24 @@ class verb(object):
     def get_pastPl(self):
         """returns a string containing the past plural form of the verb"""
         return self.pastPl
-    def get_examplesList(self, stripPunctuation=False):
+    def get_examplesList(self, stripPunctuation=False, toLower=False):
         """takes an optional parameter to strip punctuation marks; returns a list of the russian example sentences; the indices for these match the indices in the corresponding translation list"""
-        if not stripPunctuation:
+        if not stripPunctuation and not toLower:
             return self.examplesList
         else:
-            strippedList = []
-            for string in self.examplesList[:]:
-                string = string.replace(',','')
-                string = string.replace('.','')
-                string = string.replace(':','')
-                string = string.replace(';','')
-                string = string.replace('?','')
-                string = string.replace('!','')
-                strippedList.append(string)
+
+            strippedList = self.examplesList[:]
+            if stripPunctuation:
+                for i in range(len(strippedList)):
+                    strippedList[i] = strippedList[i].replace(',','')
+                    strippedList[i] = strippedList[i].replace('.','')
+                    strippedList[i] = strippedList[i].replace(':','')
+                    strippedList[i] = strippedList[i].replace(';','')
+                    strippedList[i] = strippedList[i].replace('?','')
+                    strippedList[i] = strippedList[i].replace('!','')
+            if toLower:
+                for i in range(len(strippedList)):
+                    strippedList[i] = strippedList[i].lower()
             return strippedList
     def get_examplesListTranslations(self):
         """returns a list of translations of the russian example sentences; the indices for these match the indices in the corresponding examples list"""
@@ -200,15 +204,17 @@ class verb(object):
     def get_dateLastStudied(self, user):
         """user - the user whose dateLastStudied you wish to retrieve; returns a QDate object for the date last studied"""
         return self.dateLastStudied.get(user, QtCore.QDate.currentDate())
-    def get_nextStudyDate(self,user):
-        """returns the date on which the user should next study a verb according to the SM2 algorithm;
-        if this date is before the current date, returns the phrase "Overdue"; if the user has not yet studied a verb
-        returns the phrase 'Not yet studied'"""
+    def get_nextStudyDateDisplay(self,user):
+        """returns a string indicating the status of a current verb for a given user;
+        if the verb is overdue, returns "# days overdue" where # is the days overdue;
+        if the user has not yet studied a verb returns the phrase 'Not yet studied';
+        if the verb is due on the day it is being viewed, returns 'Due today!';
+        if the verb has been studied but is not yet due, returns the due date in mm/dd/yyyy format"""
         if not self.was_previouslyStudied(user):
             return "Not yet studied"
         else:
             if self.is_overdue(user):
-                return "Overdue"
+                return str(self.get_daysOverdue(user)) + " days overdue"
             else:
                 displayDate = self.dueDate[user]
                 displayDate.toString('MM dd yyyy')
@@ -307,25 +313,33 @@ print('PAST PLURAL; BYT THEN SKAZAT')
 print(byt.get_pastPl())
 print(skazat.get_pastPl())
 print(delimiter)
-print('Examples List Functionality; Print each example, each example stripped of punctuation its translation, and then the file name for the corresponding audio; byt then skazat')
+print('Examples List Functionality; Print each example, each example stripped of punctuation, each example stripped of punctuation in lower case, each example in lower case, its translation, and then the file name for the corresponding audio; byt then skazat')
 bytExList = byt.get_examplesList()
-bytExListStripped = byt.get_examplesList(True)
+bytExListStripped = byt.get_examplesList(True,False)
+bytExListStrippedLower = byt.get_examplesList(True,True)
+bytExListLower = byt.get_examplesList(False,True)
 bytTransList = byt.get_examplesListTranslations()
 bytFileList = byt.get_verbAudioList()
 skazatExList = skazat.get_examplesList()
 skazatExListStripped = skazat.get_examplesList(True)
+skazatExListStrippedLower = skazat.get_examplesList(True,True)
+skazatExListLower = skazat.get_examplesList(False,True)
 skazatTransList = skazat.get_examplesListTranslations()
 skazatFileList = skazat.get_verbAudioList()
 print(delimiter)
 for i in range(len(bytExList)):
     print(bytExList[i])
     print(bytExListStripped[i])
+    print(bytExListStrippedLower[i])
+    print(bytExListLower[i])
     print(bytTransList[i])
     print(bytFileList[i])
     print(delimiter)
 for i in range(len(skazatExList)):
     print(skazatExList[i])
     print(skazatExListStripped[i])
+    print(skazatExListStrippedLower[i])
+    print(skazatExListLower[i])
     print(skazatTransList[i])
     print(skazatFileList[i])
     print(delimiter)
@@ -398,13 +412,13 @@ print('ANNA (SKAZAT) - SHOULD RETURN TWO WEEKS AGO')
 print(skazat.get_dateLastStudied('Anna'))
 print("BYT AND SKAZAT SHOULD BOTH BE OVERDUE NOW THAT THE DATE LAST STUDIED HAS BEEN SET TO TWO WEEKS AGO")
 print("GET NEXT STUDY DATE FOR TIM (BYT) - SHOULD RETURN OVERDUE")
-print(byt.get_nextStudyDate('Tim'))
+print(byt.get_nextStudyDateDisplay('Tim'))
 print("GET NEXT STUDY DATE FOR TIM (SKAZAT) - SHOULD RETURN OVERDUE")
-print(skazat.get_nextStudyDate('Tim'))
+print(skazat.get_nextStudyDateDisplay('Tim'))
 print("GET NEXT STUDY DATE FOR ANNA (BYT) - SHOULD RETURN OVERDUE")
-print(byt.get_nextStudyDate('Anna'))
+print(byt.get_nextStudyDateDisplay('Anna'))
 print("GET NEXT STUDY DATE FOR ANNA (SKAZAT) - SHOULD RETURN OVERDUE")
-print(skazat.get_nextStudyDate('Anna'))
+print(skazat.get_nextStudyDateDisplay('Anna'))
 print("IS OVERDUE FUNCTION TIM (BYT) - SHOULD RETURN TRUE")
 print(byt.is_overdue('Tim'))
 print("IS OVERDUE FUNCTION TIM (SKAZAT) - SHOULD RETURN TRUE")
@@ -429,13 +443,13 @@ skazat.set_dueDate('Anna')
 skazat.set_dueDate('Tim')
 print('GET NEXT STUDY DATE FUNCTIONS SHOULD NOW RETURN DUE TODAY')
 print("GET NEXT STUDY DATE FUNCTION TIM (BYT)")
-print(byt.get_nextStudyDate('Tim'))
+print(byt.get_nextStudyDateDisplay('Tim'))
 print("GET NEXT STUDY DATE FUNCTION TIM (SKAZAT)")
-print(skazat.get_nextStudyDate('Tim'))
+print(skazat.get_nextStudyDateDisplay('Tim'))
 print("GET NEXT STUDY DATE FUNCTION ANNA (BYT)")
-print(byt.get_nextStudyDate('Anna'))
+print(byt.get_nextStudyDateDisplay('Anna'))
 print("GET NEXT STUDY DATE FUNCTION ANNA (SKAZAT)")
-print(skazat.get_nextStudyDate('Anna'))
+print(skazat.get_nextStudyDateDisplay('Anna'))
 print("SETTING STUDY INTERVAL TO 5 WEEKS SO THAT THE VERBS ARE DUE IN THREE WEEKS")
 byt.lastInterval['Tim'] = 35
 byt.lastInterval['Anna'] = 35
@@ -446,18 +460,49 @@ byt.set_dueDate('Anna')
 skazat.set_dueDate('Tim')
 skazat.set_dueDate('Anna')
 print("GET NEXT STUDY DATE FUNCTION TIM (BYT)")
-print(byt.get_nextStudyDate('Tim'))
+print(byt.get_nextStudyDateDisplay('Tim'))
 print("GET NEXT STUDY DATE FUNCTION TIM (SKAZAT)")
-print(skazat.get_nextStudyDate('Tim'))
+print(skazat.get_nextStudyDateDisplay('Tim'))
 print("GET NEXT STUDY DATE FUNCTION ANNA (BYT)")
-print(byt.get_nextStudyDate('Anna'))
+print(byt.get_nextStudyDateDisplay('Anna'))
 print("GET NEXT STUDY DATE FUNCTION ANNA (SKAZAT)")
-print(skazat.get_nextStudyDate('Anna'))
+print(skazat.get_nextStudyDateDisplay('Anna'))
 print("GET DAYS OVERDUE - SHOULD RETURN AN INT < 0")
 print("TIM (BYT):",byt.get_daysOverdue('Tim'))
 print("TIM (SKAZAT):",skazat.get_daysOverdue('Tim'))
 print("ANNA (BYT):",byt.get_daysOverdue('Anna'))
 print("ANNA (SKAZAT):", skazat.get_daysOverdue('Anna'))
+print(delimiter)
+print("SET DATE LAST STUDIED TO TODAY AND INTERVAL TO 2 WEEKS; SET DUE DATE, GET DUE DATE, GET DAYS OVERDUE, TEST IS OVERDUE, AND GET NEXT STUDY DATE")
+byt.set_dateLastStudied('Tim')
+byt.set_dateLastStudied('Anna')
+skazat.set_dateLastStudied('Tim')
+skazat.set_dateLastStudied('Anna')
+byt.lastInterval['Tim'] = 14
+byt.lastInterval['Anna'] = 14
+skazat.lastInterval['Tim'] = 14
+skazat.lastInterval['Anna'] = 14
+byt.set_dueDate('Tim')
+skazat.set_dueDate('Tim')
+byt.set_dueDate('Anna')
+skazat.set_dueDate('Anna')
+print("TIM'S DUE DATE AND DAYS OVERDUE (BYT):")
+print(byt.get_dueDate('Tim'))
+print(byt.get_daysOverdue('Tim'))
+print('is overdue:', byt.is_overdue('Tim'))
+print("ANNA'S DUE DATE AND DAYS OVERDUE (BYT):")
+print(byt.get_dueDate('Anna'))
+print(byt.get_daysOverdue('Anna'))
+print('is overdue:', byt.is_overdue('Anna'))
+print("TIM'S DUE DATE AND DAYS OVERDUE (SKAZAT):")
+print(skazat.get_dueDate('Tim'))
+print(skazat.get_daysOverdue('Tim'))
+print('is overdue:', skazat.is_overdue('Tim'))
+print("ANNA'S DUE DATE AND DAYS OVERDUE (SKAZAT):")
+print(skazat.get_dueDate('Anna'))
+print(skazat.get_daysOverdue('Anna'))
+print('is overdue:', skazat.is_overdue('Anna'))
+
 fileList = os.listdir('./verbs')
 fileList.sort()
 
