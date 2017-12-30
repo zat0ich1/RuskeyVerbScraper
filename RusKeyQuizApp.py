@@ -70,18 +70,12 @@ def mainWindow():
     QNPIFormsSubGrid = QtGui.QGridLayout()
     QNPISubGrid.addLayout(QinfoSubGrid,0,0,2,1)
     QNPISubGrid.addLayout(QNPIFormsSubGrid,3,0,1,1)
+
     #----------------------------------------------
     # NON PAST INDICATIVE AREA LABEL:
     #----------------------------------------------
     QnonPastPaneLabel = QtSectionLabel("Non-Past Indicative Forms")
     QinfoSubGrid.addWidget(QnonPastPaneLabel,0,0,1,4)
-    #-----------------------------------------------
-    # MEANING LABEL AND BOX
-    #-----------------------------------------------
-    QmeaningLabel = QtVFixedLabel("Meaning:")
-    QmeaningBox = QtDisplay()
-    QinfoSubGrid.addWidget(QmeaningLabel,2,0,1,1)
-    QinfoSubGrid.addWidget(QmeaningBox,2,1,1,3)
     # ----------------------------------------------
     # PLAY AUDIO BUTTON:
     #-----------------------------------------------
@@ -94,6 +88,14 @@ def mainWindow():
     QinfinitiveBox = QtDisplay()
     QinfoSubGrid.addWidget(QinfinitiveLabel,1,0,1,1)
     QinfoSubGrid.addWidget(QinfinitiveBox,1,1,1,1)
+
+    #-----------------------------------------------
+    # MEANING LABEL AND BOX
+    #-----------------------------------------------
+    QmeaningLabel = QtVFixedLabel("Meaning:")
+    QmeaningBox = QtDisplay()
+    QinfoSubGrid.addWidget(QmeaningLabel,2,0,1,1)
+    QinfoSubGrid.addWidget(QmeaningBox,2,1,1,3)
 
     #-----------------------------------------------
     # ASPECT LABEL AND BOX
@@ -167,59 +169,66 @@ def mainWindow():
     QPastSubGrid = QtGui.QGridLayout()
     QverbBrowserGrid.addLayout(QPastSubGrid,0,2,1,1)
     #----------------------------------------------
+    # CURRENT USER DISPLAY
+    #----------------------------------------------
+    QuserLabel = QtVFixedLabel('Current User:')
+    QuserBox = QtDisplay()
+    QPastSubGrid.addWidget(QuserLabel,0,0,1,1)
+    QPastSubGrid.addWidget(QuserBox,0,1,1,1)
+    #----------------------------------------------
     # DATE STUDIED DISPLAY
     #----------------------------------------------
-    QdateLabel = QtVFixedLabel('Date last studied:')
+    QdateLabel = QtVFixedLabel('Date verb last studied:')
     QdateDisplay = QtDisplay()
-    QPastSubGrid.addWidget(QdateLabel,0,0,1,1)
-    QPastSubGrid.addWidget(QdateDisplay,0,1,1,1)
+    QPastSubGrid.addWidget(QdateLabel,1,0,1,1)
+    QPastSubGrid.addWidget(QdateDisplay,1,1,1,1)
     #----------------------------------------------
     # PAST AND IMPERATIVE AREA LABEL:
     #----------------------------------------------
     QPastPaneLabel = QtSectionLabel("Imperative and Past Forms")
-    QPastSubGrid.addWidget(QPastPaneLabel,1,0,1,2)
+    QPastSubGrid.addWidget(QPastPaneLabel,2,0,1,2)
     #-----------------------------------------------
     # IMPERATIVE SINGULAR
     #-----------------------------------------------
     QimperativeSgLabel = QtVFixedLabel("Imperative Singular:")
     QimperativeSgBox = QtDisplay()
-    QPastSubGrid.addWidget(QimperativeSgLabel,2,0,1,1)
-    QPastSubGrid.addWidget(QimperativeSgBox,2,1,1,1)
+    QPastSubGrid.addWidget(QimperativeSgLabel,3,0,1,1)
+    QPastSubGrid.addWidget(QimperativeSgBox,3,1,1,1)
     #-----------------------------------------------
     # IMPERATIVE PLURAL
     #-----------------------------------------------
     QimperativePlLabel = QtVFixedLabel("Imperative Plural:")
     QimperativePlBox = QtDisplay()
-    QPastSubGrid.addWidget(QimperativePlLabel,3,0,1,1)
-    QPastSubGrid.addWidget(QimperativePlBox,3,1,1,1)
+    QPastSubGrid.addWidget(QimperativePlLabel,4,0,1,1)
+    QPastSubGrid.addWidget(QimperativePlBox,4,1,1,1)
     #-----------------------------------------------
     # PAST MASCULINE
     #-----------------------------------------------
     QpastMascLabel = QtVFixedLabel("Past Masculine:")
     QpastMascBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastMascLabel,4,0,1,1)
-    QPastSubGrid.addWidget(QpastMascBox,4,1,1,1)
+    QPastSubGrid.addWidget(QpastMascLabel,5,0,1,1)
+    QPastSubGrid.addWidget(QpastMascBox,5,1,1,1)
     #-----------------------------------------------
     # PAST FEMININE
     #-----------------------------------------------
     QpastFemLabel = QtVFixedLabel("Past Feminine:")
     QpastFemBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastFemLabel,5,0,1,1)
-    QPastSubGrid.addWidget(QpastFemBox,5,1,1,1)
+    QPastSubGrid.addWidget(QpastFemLabel,6,0,1,1)
+    QPastSubGrid.addWidget(QpastFemBox,6,1,1,1)
     #-----------------------------------------------
     # PAST NEUTER
     #-----------------------------------------------
     QpastNeutLabel = QtVFixedLabel("Past Neuter:")
     QpastNeutBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastNeutLabel,6,0,1,1)
-    QPastSubGrid.addWidget(QpastNeutBox,6,1,1,1)
+    QPastSubGrid.addWidget(QpastNeutLabel,7,0,1,1)
+    QPastSubGrid.addWidget(QpastNeutBox,7,1,1,1)
     #-----------------------------------------------
     # PAST PLURAL
     #-----------------------------------------------
     QpastPlLabel = QtVFixedLabel("Past Plural:")
     QpastPlBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastPlLabel,7,0,1,1)
-    QPastSubGrid.addWidget(QpastPlBox,7,1,1,1)
+    QPastSubGrid.addWidget(QpastPlLabel,8,0,1,1)
+    QPastSubGrid.addWidget(QpastPlBox,8,1,1,1)
 
     #-----------------------------------------------
     # BOTTOM SECIONS
