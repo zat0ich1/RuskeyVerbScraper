@@ -189,7 +189,7 @@ class verb(object):
     def was_previouslyStudied(self, user):
         """returns the value of self.previouslyStudied for the user specified; used to determine whether a user should be presented with familiarization
         screens prior to quiz initiation"""
-        return self.previouslyStudied[user]
+        return self.previouslyStudied.get(user, False)
     def was_studiedToday(self,user):
         """returns True if a user last studied a verb today; False otherwise"""
         if not self.was_previouslyStudied(user):
@@ -279,9 +279,9 @@ class verb(object):
         self.dueDate[user] = self.dateLastStudied[user].addDays(self.lastInterval[user])
 
 #testing -----
-delimiter = '=========================================='
-byt = verb('0001byt.txt')
-skazat = verb('0002skazat.txt')
+# delimiter = '=========================================='
+# byt = verb('0001byt.txt')
+# skazat = verb('0002skazat.txt')
 # print(delimiter)
 # print('PRINT ENTIRE CONJUGATION INFO FOR BYT')
 # print(byt)
@@ -1045,8 +1045,11 @@ skazat = verb('0002skazat.txt')
 
 fileList = os.listdir('./verbs')
 fileList.sort()
-
-#for file in fileList:
-#    if file[-4:] == '.txt':
-#        with shelve.open('./verbs/verbsDB') as verbShelf:
-#            verbShelf[file:-4] = verb(file)
+if 'verbsDB' not in fileList:
+    for file in fileList:
+        if file[-4:] == '.txt':
+           with shelve.open('./verbs/verbsDB') as verbShelf:
+               currentVerb = verb(file)
+               verbShelf[file[:-4]] = currentVerb
+    with shelve.open('./verbs/verbsDB') as verbShelf:
+        verbShelf['users'] = []
