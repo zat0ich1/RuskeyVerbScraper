@@ -40,10 +40,64 @@ class QtVFixedLabel(QtGui.QLabel): #custom version of the QLabel class that sets
         QtGui.QLabel.__init__(self, text)
         self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
 
+
+
 def mainWindow():
     app =  QtGui.QApplication(sys.argv)
+    QmainWindowObj = QtGui.QMainWindow()
     QverbBrowser = QtGui.QWidget()
-    QverbBrowser.setGeometry(100,100,800,800)
+    with shelve.open('./verbs/verbsDB') as verbShelf:
+        print(verbShelf['users'])
+        user = changeUserMsgBox(QverbBrowser, verbShelf['users']) #creates a dialog box for choosing a user
+        if user not in verbShelf['users']:
+            temp = []
+            for u in verbShelf['users']:
+                temp.append(u)
+            temp.append(user)
+            verbShelf['users'] = temp #add user to users item in verbShelf (store user permanently if not already stored)
+    QmainWindowObj.setGeometry(100,100,800,800)
+    QmainMenu = QmainWindowObj.menuBar()
+    QfileMenu = QmainMenu.addMenu("File")
+    QfileMenuAbout = QtGui.QAction("About", QmainMenu)
+    QfileMenu.addAction(QfileMenuAbout)
+    def aboutAction():
+        QaboutWindow = QtGui.QMessageBox()
+        QaboutWindow.setGeometry(150,150,300,300)
+        QaboutWindow.setText("RusKey is an opensource project developed by Eli Ginsburg-Marcy. The examples, conjugations, and frequency rankings it contains are derived from data scraped from en.openrussian.org")
+        QaboutWindow.setWindowTitle("About RusKey")
+        QaboutWindow.setIcon(QtGui.QMessageBox.Information)
+        QaboutWindow.setStandardButtons(QtGui.QMessageBox.Close)
+        QaboutWindow.exec_()
+    QfileMenuAbout.triggered.connect(aboutAction)
+    QfileMenuManageUsers = QtGui.QAction("Manage Users", QmainMenu)
+    QfileMenu.addAction(QfileMenuManageUsers)
+    def manageUsers():
+        QmanageUsersWindow = QtGui.QWidget(QmainWindowObj)
+        QmanageUsersWindow.setWindowFlags(QtCore.Qt.Window)
+        print(QtCore.Qt.Window)
+        QmanageUsersWindow.setGeometry(150,150,400,400)
+        QmanageUsersGrid = QtGui.QGridLayout()
+        QchangeUserBtnMgUsers = QtGui.QPushButton("Change to Selected User")
+        QdeleteUserBtn = QtGui.QPushButton("Delete Selected User")
+        QuserList = QtGui.QListWidget()
+        with shelve.open('./verbs/verbsDB') as verbShelf:
+            userList = []
+            for u in verbShelf['users']:
+                userList.append(u)
+            userList.sort()
+            QuserList.addItems(userList)
+        QmanageUsersGrid.addWidget(QchangeUserBtnMgUsers)
+        QmanageUsersGrid.addWidget(QdeleteUserBtn)
+        QmanageUsersGrid.addWidget(QuserList)
+        QmanageUsersWindow.setLayout(QmanageUsersGrid)
+        QmanageUsersWindow.show()
+        QuserList.setCurrentRow(0)
+    QfileMenuManageUsers.triggered.connect(manageUsers)
+    QfileMenuQuit = QtGui.QAction("Quit", QmainMenu)
+    QfileMenu.addAction(QfileMenuQuit)
+    QfileMenuQuit.setShortcut("Ctrl+Q")
+
+
     #--------------------------------------------
     # GRID LAYOUT
     #--------------------------------------------
@@ -186,49 +240,49 @@ def mainWindow():
     # PAST AND IMPERATIVE AREA LABEL:
     #----------------------------------------------
     QPastPaneLabel = QtSectionLabel("Imperative and Past Forms")
-    QPastSubGrid.addWidget(QPastPaneLabel,1,0,1,2)
+    QPastSubGrid.addWidget(QPastPaneLabel,0,0,1,2)
     #-----------------------------------------------
     # IMPERATIVE SINGULAR
     #-----------------------------------------------
     QimperativeSgLabel = QtVFixedLabel("Imperative Singular:")
     QimperativeSgBox = QtDisplay()
-    QPastSubGrid.addWidget(QimperativeSgLabel,2,0,1,1)
-    QPastSubGrid.addWidget(QimperativeSgBox,2,1,1,1)
+    QPastSubGrid.addWidget(QimperativeSgLabel,1,0,1,1)
+    QPastSubGrid.addWidget(QimperativeSgBox,1,1,1,1)
     #-----------------------------------------------
     # IMPERATIVE PLURAL
     #-----------------------------------------------
     QimperativePlLabel = QtVFixedLabel("Imperative Plural:")
     QimperativePlBox = QtDisplay()
-    QPastSubGrid.addWidget(QimperativePlLabel,3,0,1,1)
-    QPastSubGrid.addWidget(QimperativePlBox,3,1,1,1)
+    QPastSubGrid.addWidget(QimperativePlLabel,2,0,1,1)
+    QPastSubGrid.addWidget(QimperativePlBox,2,1,1,1)
     #-----------------------------------------------
     # PAST MASCULINE
     #-----------------------------------------------
     QpastMascLabel = QtVFixedLabel("Past Masculine:")
     QpastMascBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastMascLabel,4,0,1,1)
-    QPastSubGrid.addWidget(QpastMascBox,4,1,1,1)
+    QPastSubGrid.addWidget(QpastMascLabel,3,0,1,1)
+    QPastSubGrid.addWidget(QpastMascBox,3,1,1,1)
     #-----------------------------------------------
     # PAST FEMININE
     #-----------------------------------------------
     QpastFemLabel = QtVFixedLabel("Past Feminine:")
     QpastFemBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastFemLabel,5,0,1,1)
-    QPastSubGrid.addWidget(QpastFemBox,5,1,1,1)
+    QPastSubGrid.addWidget(QpastFemLabel,4,0,1,1)
+    QPastSubGrid.addWidget(QpastFemBox,4,1,1,1)
     #-----------------------------------------------
     # PAST NEUTER
     #-----------------------------------------------
     QpastNeutLabel = QtVFixedLabel("Past Neuter:")
     QpastNeutBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastNeutLabel,6,0,1,1)
-    QPastSubGrid.addWidget(QpastNeutBox,6,1,1,1)
+    QPastSubGrid.addWidget(QpastNeutLabel,5,0,1,1)
+    QPastSubGrid.addWidget(QpastNeutBox,5,1,1,1)
     #-----------------------------------------------
     # PAST PLURAL
     #-----------------------------------------------
     QpastPlLabel = QtVFixedLabel("Past Plural:")
     QpastPlBox = QtDisplay()
-    QPastSubGrid.addWidget(QpastPlLabel,7,0,1,1)
-    QPastSubGrid.addWidget(QpastPlBox,7,1,1,1)
+    QPastSubGrid.addWidget(QpastPlLabel,6,0,1,1)
+    QPastSubGrid.addWidget(QpastPlBox,6,1,1,1)
 
     #-----------------------------------------------
     # DYNAMICALLY ALLOCATED SPACE FOR EXAMPLES - this holder will be populated by a displayVerb function, since the number of examples
@@ -314,17 +368,9 @@ def mainWindow():
     QcustomQuizGrid.addWidget(QcustomQuizList,2,0,1,2)
 
     QverbBrowser.setLayout(QverbBrowserGrid)
-    QverbBrowser.setWindowTitle("RusKey Verb Browser")
-    QverbBrowser.show()
-    with shelve.open('./verbs/verbsDB') as verbShelf:
-        print(verbShelf['users'])
-        user = changeUserMsgBox(QverbBrowser, verbShelf['users']) #creates a dialog box for choosing a user
-        if user not in verbShelf['users']:
-            temp = []
-            for u in verbShelf['users']:
-                temp.append(u)
-            temp.append(user)
-            verbShelf['users'] = temp #add user to users item in verbShelf (store user permanently if not already stored)
+    QmainWindowObj.setWindowTitle("RusKey Verb Browser")
+    QmainWindowObj.setCentralWidget(QverbBrowser)
+    QmainWindowObj.show()
     QuserBox.setText(user)
     verbs = getSortedVerbList(user) #load the verb list in the relevant due date order for user
     QverbList.addItems(verbs) #add the verbs in order to the QListWidget
@@ -349,6 +395,7 @@ def mainWindow():
             QpastNeutBox.setText(targetVerb.get_pastNeut())
             QpastPlBox.setText(targetVerb.get_pastPl())
             QdateDisplay.setText(targetVerb.get_nextStudyDateDisplay(user))
+
 
 
 
@@ -382,6 +429,7 @@ def changeUserMsgBox(parent, userList):
         user, selectUser = QtGui.QInputDialog.getItem(parent,"Choose a User","Select a user or enter a new user:",userList)
         if selectUser and user != "":
             return user
+
 
 
 def getSortedVerbList(user):
