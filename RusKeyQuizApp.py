@@ -30,7 +30,7 @@ class QtDisplayLong(QtGui.QLabel): #custom version of QLabel class that wraps by
 
 class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center aligns, bolds, and sets vertical policy to fixed by default
     def __init__(self, text):
-        QtGui.QLabel.__init__(self, text)
+        QtGui.QLabel.__init__(self, text='')
         QboldFont = QtGui.QFont()
         QboldFont.setBold(True)
         self.setFont(QboldFont)
@@ -39,10 +39,13 @@ class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center 
 
 class QtVFixedLabel(QtGui.QLabel): #custom version of the QLabel class that sets vertical policy to fixed by default
     def __init__(self,text):
-        QtGui.QLabel.__init__(self, text)
+        QtGui.QLabel.__init__(self, text='')
         self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
 
-
+class QtFixedTextBox(QtGui.QTextEdit):
+    def __init__(self, text=''):
+        QtGui.QTextEdit.__init__(self, text)
+        QtGui.QTextEdit.setReadOnly(self,True)
 
 class mainWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -571,14 +574,35 @@ class mainWindow(QtGui.QMainWindow):
         #self.sessionExampleMax will determine how many iterations are needed to exhaust the verb with the most examples
         print(self.sessionExampleMax)
 
-        self.sessionWindow = QtGui.QDialog(self.QverbBrowser)
-        self.sessionWindow.setGeometry(150,150,600,400)
-        self.sessionGrid = QtGui.QGridLayout()
-        self.sessionStudyInfinitive = QtGui.QWidget()
-        self.sessionQuizInfinitive = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
+        self.QsessionWindow = QtGui.QDialog(self.QverbBrowser)
+        self.QsessionWindow.setGeometry(150,150,600,400)
+        self.QsessionGrid = QtGui.QGridLayout()
+
+        #The top portion of the session window will change depending on what is being studied/quizzed;
+        #the bottom will consist of two progress bars displaying your progress on the overall quiz and your progress on the individual verbs
+
+        #===============================================
+        #Study widget for infinitive - just displays the infinitive
+        self.QsessionStudyInfinitiveWidget = QtGui.QWidget()
+        self.QsessionStudyInfinitiveGrid = QtGui.QGridLayout()
+        self.QsessionStudyInfinitiveInfo = QtGui.QLabel('You will be quizzed on the following infinitive:')
+        self.QsessionStudyInfinitiveForm = QtDisplay()
+        self.QsessionStudyInfinitiveMeaning = QtFixedTextBox()
+        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveInfo)
+        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveForm)
+        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveMeaning)
+        self.QsessionStudyInfinitiveWidget.setLayout(self.QsessionStudyInfinitiveGrid)
+        self.QsessionGrid.addWidget(self.QsessionStudyInfinitiveWidget)
+        self.QsessionStudyInfinitiveWidget.hide()
+        #=================================================
+
+        self.QsessionQuizInfinitive = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
         self.QverbProgressBar = QtGui.QProgressBar()
         self.QquizProgressBar = QtGui.QProgressBar()
-        # self.sessionWindow.exec_()
+        self.QsessionGrid.addWidget(self.QverbProgressBar)
+        self.QsessionGrid.addWidget(self.QquizProgressBar)
+        self.QsessionWindow.setLayout(self.QsessionGrid)
+        self.QsessionWindow.exec_()
 
     def getBestMatches(self, shelf, infinitive):
         """takes an open shelf file (shelf) and an infinitive form (string) and returns the three closest matching infinitives (strings) in the verbShelf DB (as a list)"""
