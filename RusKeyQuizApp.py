@@ -10,6 +10,7 @@ import sys
 import os
 import shelve
 import random
+from fuzzywuzzy import fuzz
 from playsound import playsound
 from ShelveVerbs import verb
 from PyQt4 import QtGui
@@ -311,14 +312,18 @@ class mainWindow(QtGui.QMainWindow):
         self.QbottomGrid.addLayout(self.QbuttonAreaGrid,0,1,1,1)
         self.QchangeUserBtn = QtGui.QPushButton("Change User")
         self.QautoQuizBtn = QtGui.QPushButton("Quiz on Most Overdue Items (auto)")
+        self.QautoStudyBtn = QtGui.QPushButton("Study Next Three Verbs (auto)")
         self.QcustomQuizBtn = QtGui.QPushButton("Quiz on Custom List -->")
+        self.QcustomStudyBtn = QtGui.QPushButton("Study Verbs on Custom List -->")
         self.QaddToListBtn = QtGui.QPushButton("-- Add to Quiz List -->")
         self.QremoveFromListBtn = QtGui.QPushButton("<-- Remove from Quiz List --")
         self.QbuttonAreaGrid.addWidget(self.QchangeUserBtn,0,0,1,1)
-        self.QbuttonAreaGrid.addWidget(self.QautoQuizBtn,1,0,1,1)
-        self.QbuttonAreaGrid.addWidget(self.QcustomQuizBtn,2,0,1,1)
-        self.QbuttonAreaGrid.addWidget(self.QaddToListBtn,3,0,1,1)
-        self.QbuttonAreaGrid.addWidget(self.QremoveFromListBtn,4,0,1,1)
+        self.QbuttonAreaGrid.addWidget(self.QautoStudyBtn,1,0,1,1)
+        self.QbuttonAreaGrid.addWidget(self.QcustomStudyBtn,2,0,1,1)
+        self.QbuttonAreaGrid.addWidget(self.QautoQuizBtn,3,0,1,1)
+        self.QbuttonAreaGrid.addWidget(self.QcustomQuizBtn,4,0,1,1)
+        self.QbuttonAreaGrid.addWidget(self.QaddToListBtn,5,0,1,1)
+        self.QbuttonAreaGrid.addWidget(self.QremoveFromListBtn,6,0,1,1)
         #-------------------------------------------------
         #    ___________
         #   |      |    |
@@ -349,13 +354,17 @@ class mainWindow(QtGui.QMainWindow):
         self.QverbList.addItems(self.verbs) #add the verbs in order to the QListWidget
         self.QverbList.setCurrentRow(0) #select the first row by default
         self.QplayAudioButton.clicked.connect(self.playConjugationAudio)
-        self.populateVerb(self.QverbList.currentItem().text()) #populate the conjugation for the verb in the first row
-        self.QverbList.currentItemChanged.connect(lambda: self.populateVerb(self.QverbList.currentItem().text())) # any time a new row is selected, populate the conjugation for that row
+        self.populateVerb() #populate the conjugation for the verb in the first row
+        self.QverbList.currentItemChanged.connect(self.populateVerb) # any time a new row is selected, populate the conjugation for that row
         self.QaddToListBtn.clicked.connect(self.addVerbToCustom)
+        self.QchangeUserBtn.clicked.connect(self.manageUsers)
         self.QremoveFromListBtn.clicked.connect(self.removeVerbFromCustom)
+        self.QautoQuizBtn.clicked.connect(self.autoQuizSession)
+        self.QautoStudyBtn.clicked.connect(self.autoStudySession)
 
-    def populateVerb(self, verbKey): #function to update conjugation display when new verb in QverbList is selected
+    def populateVerb(self): #function to update conjugation display when new verb in QverbList is selected
         with shelve.open('./verbs/verbsDB') as verbShelf:
+            verbKey = self.verbListtoDictKey(self.QverbList.currentItem().text())
             targetVerb = verbShelf[verbKey]
             self.QinfinitiveBox.setText(targetVerb.get_infinitive())
             self.QmeaningBox.setText(targetVerb.get_meaning())
@@ -394,67 +403,67 @@ class mainWindow(QtGui.QMainWindow):
         return userList
 
     def manageUsers(self):
-        QmanageUsersWindow = QtGui.QDialog(self)
-        QmanageUsersWindow.setWindowFlags(QtCore.Qt.Window)
-        QmanageUsersWindow.setGeometry(150,150,400,400)
-        QmanageUsersGrid = QtGui.QGridLayout()
-        QuserDispLabelMgUsers = QtVFixedLabel("Current User:")
-        QuserDisplayMgUsers = QtDisplay()
-        QuserDisplayMgUsers.setText(self.user)
-        QchangeUserBtnMgUsers = QtGui.QPushButton("Change to Selected User")
-        QdeleteUserBtn = QtGui.QPushButton("Delete Selected User")
-        QuserList = QtGui.QListWidget()
-        QuserList.addItems(self.getUserList())
-        QmanageUsersGrid.addWidget(QuserDispLabelMgUsers,0,0,1,1)
-        QmanageUsersGrid.addWidget(QuserDisplayMgUsers,0,1,1,1)
-        QmanageUsersGrid.addWidget(QchangeUserBtnMgUsers,1,0,1,2)
-        QmanageUsersGrid.addWidget(QdeleteUserBtn,2,0,1,2)
-        QmanageUsersGrid.addWidget(QuserList,3,0,1,2)
-        QmanageUsersWindow.setLayout(QmanageUsersGrid)
-        QmanageUsersWindow.setWindowTitle("Manage Users")
+        self.QmanageUsersWindow = QtGui.QDialog(self)
+        self.QmanageUsersWindow.setWindowFlags(QtCore.Qt.Window)
+        self.QmanageUsersWindow.setGeometry(150,150,400,400)
+        self.QmanageUsersGrid = QtGui.QGridLayout()
+        self.QuserDispLabelMgUsers = QtVFixedLabel("Current User:")
+        self.QuserDisplayMgUsers = QtDisplay()
+        self.QuserDisplayMgUsers.setText(self.user)
+        self.QchangeUserBtnMgUsers = QtGui.QPushButton("Change to Selected User")
+        self.QdeleteUserBtn = QtGui.QPushButton("Delete Selected User")
+        self.QuserList = QtGui.QListWidget()
+        self.QuserList.addItems(self.getUserList())
+        self.QmanageUsersGrid.addWidget(self.QuserDispLabelMgUsers,0,0,1,1)
+        self.QmanageUsersGrid.addWidget(self.QuserDisplayMgUsers,0,1,1,1)
+        self.QmanageUsersGrid.addWidget(self.QchangeUserBtnMgUsers,1,0,1,2)
+        self.QmanageUsersGrid.addWidget(self.QdeleteUserBtn,2,0,1,2)
+        self.QmanageUsersGrid.addWidget(self.QuserList,3,0,1,2)
+        self.QmanageUsersWindow.setLayout(self.QmanageUsersGrid)
+        self.QmanageUsersWindow.setWindowTitle("Manage Users")
 
-        QuserList.setCurrentRow(0)
+        self.QuserList.setCurrentRow(0)
         def verifyChangeUserBox():
             """verification window for changing users"""
-            Qverify = QtGui.QMessageBox(QmanageUsersWindow)
-            Qverify.setText("Are you sure you wish to change users?")
-            Qverify.setIcon(QtGui.QMessageBox.Warning)
-            Qverify.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-            if QuserList.currentItem().text() != self.user:
-                result = Qverify.exec_()
+            self.Qverify = QtGui.QMessageBox(self.QmanageUsersWindow)
+            self.Qverify.setText("Are you sure you wish to change users?")
+            self.Qverify.setIcon(QtGui.QMessageBox.Warning)
+            self.Qverify.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+            if self.QuserList.currentItem().text() != self.user:
+                result = self.Qverify.exec_()
                 if result == QtGui.QMessageBox.Yes:
-                    self.user = QuserList.currentItem().text()
-                    QuserDisplayMgUsers.setText(self.user)
+                    self.user = self.QuserList.currentItem().text()
+                    self.QuserDisplayMgUsers.setText(self.user)
                     self.QuserBox.setText(self.user)
                     self.QverbList.clear()
                     self.verbs = self.getSortedVerbList(self.user) #load the verb list in the relevant due date order for user
                     self.QverbList.addItems(self.verbs) #add the verbs in order to the QListWidget
         def deleteUser():
             """verification window for deleting a user"""
-            if QuserList.currentItem().text() == self.user:
-                Qnotice = QtGui.QMessageBox(QmanageUsersWindow)
-                Qnotice.setText("Cannot delete the current user!")
-                Qnotice.setIcon(QtGui.QMessageBox.Information)
-                Qnotice.setStandardButtons(QtGui.QMessageBox.Ok)
-                Qnotice.exec_()
+            if self.QuserList.currentItem().text() == self.user:
+                self.Qnotice = QtGui.QMessageBox(self.QmanageUsersWindow)
+                self.Qnotice.setText("Cannot delete the current user!")
+                self.Qnotice.setIcon(QtGui.QMessageBox.Information)
+                self.Qnotice.setStandardButtons(QtGui.QMessageBox.Ok)
+                self.Qnotice.exec_()
             else:
-                Qverify = QtGui.QMessageBox(QmanageUsersWindow)
-                Qverify.setText("Are you sure you wish to DELETE the given user? This operation cannot be undone.")
-                Qverify.setIcon(QtGui.QMessageBox.Warning)
-                Qverify.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
-                result = Qverify.exec_()
+                self.Qverify = QtGui.QMessageBox(self.QmanageUsersWindow)
+                self.Qverify.setText("Are you sure you wish to DELETE the given user? This operation cannot be undone.")
+                self.Qverify.setIcon(QtGui.QMessageBox.Warning)
+                self.Qverify.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
+                result = self.Qverify.exec_()
                 if result == QtGui.QMessageBox.Yes:
                     userList = self.getUserList()
-                    userList.remove(QuserList.currentItem().text())
+                    userList.remove(self.QuserList.currentItem().text())
                     with shelve.open('./verbs/verbsDB') as verbShelf:
                         verbShelf['users'] = userList
-                    QuserList.clear()
-                    QuserList.addItems(self.getUserList())
+                    self.QuserList.clear()
+                    self.QuserList.addItems(self.getUserList())
 
 
-        QdeleteUserBtn.clicked.connect(deleteUser)
-        QchangeUserBtnMgUsers.clicked.connect(verifyChangeUserBox)
-        QmanageUsersWindow.exec_()
+        self.QdeleteUserBtn.clicked.connect(deleteUser)
+        self.QchangeUserBtnMgUsers.clicked.connect(verifyChangeUserBox)
+        self.QmanageUsersWindow.exec_()
 
     def addVerbToCustom(self):
         target = self.QcustomQuizList.findItems(self.QverbList.currentItem().text(), QtCore.Qt.MatchExactly)
@@ -466,7 +475,7 @@ class mainWindow(QtGui.QMainWindow):
         self.QcustomQuizList.takeItem(rownum)
 
     def playConjugationAudio(self):
-        verbAudio = './verbs/' + self.QverbList.currentItem().text() + '.mp3'
+        verbAudio = './verbs/' + self.verbListtoDictKey(self.QverbList.currentItem().text()) + '.mp3'
         playsound(verbAudio)
 
 
@@ -485,9 +494,6 @@ class mainWindow(QtGui.QMainWindow):
     def closeApp(self):
         sys.exit()
 
-    def test():
-        print("It worked!")
-
 
 
     def getSortedVerbList(self, user):
@@ -498,19 +504,144 @@ class mainWindow(QtGui.QMainWindow):
             notPreviouslyStudiedList = []
             for key in verbShelf:
                 if key != 'users':
-                    print(key)
-                    print(verbShelf[key])
                     if verbShelf[key].was_previouslyStudied(user):
                         previouslyStudiedList.append(key)
                     else:
                         notPreviouslyStudiedList.append(key)
             previouslyStudiedList.sort(key=lambda x: verbShelf[x].get_daysOverdue(user), reverse=True)
-            notPreviouslyStudiedList.sort(key=lambda x: verbShelf[x].get_conjugationAudio())
+            notPreviouslyStudiedList.sort(key=lambda x: verbShelf[x].get_conjugationAudio())#since the conjugation audio file is in the form of a
+                                                                                            #zfilled frequency rank and the transliterated infinitive, this should order the verbs by frequency rank
+            if len(previouslyStudiedList) > 0:
+                for i in range(len(previouslyStudiedList)):# replace transliterated keys with russian infinitives
+                    newkey = previouslyStudiedList[i]
+                    previouslyStudiedList[i] = verbShelf[newkey].get_verbForList()
+            if len(notPreviouslyStudiedList) > 0:
+                print(len(notPreviouslyStudiedList))
+                for i in range(len(notPreviouslyStudiedList)):# replace transliterated keys with russian infinitives
+                    print(i)
+                    newkey = notPreviouslyStudiedList[i]
+                    notPreviouslyStudiedList[i] = verbShelf[newkey].get_verbForList()
         return previouslyStudiedList + notPreviouslyStudiedList
 
+    def autoStudySession(self):
+        """grabs the first three non-studied verbs from the QverbList widget and executes a study session.
+        During the study session, the user is first presented with the conjugation for each of the three verbs,
+        then given a brief quiz matching the infinitive to meaning. The process then repeats with each example (i.e.
+        the user is presented with one example from each verb and is then quizzed on those three examples)"""
+        with shelve.open('./verbs/verbsDB') as verbShelf:
+            self.studyVerbs = []
+            for i in range(self.QverbList.count()):
+                if len(self.studyVerbs) > 2:
+                    break
+                key = self.verbListtoDictKey(self.QverbList.item(i).text())
+                if not verbShelf[key].was_previouslyStudied(self.user):
+                    self.studyVerbs.append(key)
+            self.launchSessionWindow(verbShelf)
+
+    def autoQuizSession(self):
+        """grabs the three most overdue verbs (including verbs which are not yet due if there are no overdue verbs) and
+        exectues a quiz session. During the quiz session, the user is quized on matching the three infinitives to their meanings,
+        then on one example from each verb, then on a second example, etc."""
+        self.quizVerbs = []
+        with shelve.open('./verbs/verbsDB') as verbShelf:
+            for i in range(3):# grab the first three items, since these should already be in most overdue order
+                verbToAdd = self.verbListtoDictKey(self.QverbList.item(i).text())
+                if verbShelf[verbToAdd].was_previouslyStudied(self.user):
+                    self.quizVerbs.append(verbToAdd)
+            if len(self.quizVerbs) == 0:
+                self.QnoVerbsStudiedWarning = QtGui.QMessageBox(self)
+                self.QnoVerbsStudiedWarning.setText("You haven't studied any verbs yet. Study some verbs before attempting to review.")
+                self.QnoVerbsStudiedWarning.setIcon(QtGui.QMessageBox.Warning)
+                self.QnoVerbsStudiedWarning.setStandardButtons(QtGui.QMessageBox.Ok)
+                self.QnoVerbsStudiedWarning.exec_()
+            else:
+                self.launchSessionWindow(verbShelf, study=False)
+
+    def launchSessionWindow(self, shelf, study=True):
+        """helper function for the quiz and study functions - creates widgets according to whether the user has selected study or quiz"""
+        if study:
+            self.sessionVerbKeys = self.studyVerbs
+        else:
+            self.sessionVerbKeys = self.quizVerbs
+        self.sessionExampleCountList = []
+        for key in self.sessionVerbKeys:
+            self.sessionExampleCountList.append(len(shelf[key].get_examplesList()))
+        self.sessionExampleMax = max(self.sessionExampleCountList) #session will proceed by iterating through the verbs,
+        # first showing infinitives and meanings, then showing the first example, then the second, etc.;
+        #self.sessionExampleMax will determine how many iterations are needed to exhaust the verb with the most examples
+        print(self.sessionExampleMax)
+
+        self.sessionWindow = QtGui.QDialog(self.QverbBrowser)
+        self.sessionWindow.setGeometry(150,150,600,400)
+        self.sessionGrid = QtGui.QGridLayout()
+        self.sessionStudyInfinitive = QtGui.QWidget()
+        self.sessionQuizInfinitive = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
+        self.QverbProgressBar = QtGui.QProgressBar()
+        self.QquizProgressBar = QtGui.QProgressBar()
+        # self.sessionWindow.exec_()
+
+    def getBestMatches(self, shelf, infinitive):
+        """takes an open shelf file (shelf) and an infinitive form (string) and returns the three closest matching infinitives (strings) in the verbShelf DB (as a list)"""
+        infinitiveList = [] #this will hold all the infinitives that do not match the given infinitive
+        infinitiveScoresList = [] #this will hold scores comparing the infitives in infinitiveList to the given infinitive; the more similar, the higher the score; indexes of scores and infinitives should match
+        bestMatchList = [] #the three best matches will be appended to this list
+        for key in shelf:
+            if key != 'users':
+                if shelf[key].get_infinitive() != infinitive: # check that infinitive does not match given infintive
+                    score = fuzz.ratio(shelf[key].get_infinitive(), infinitive) #calculate score based on similarity
+                    infinitiveList.append(shelf[key].get_infinitive()) #add the infitive compared to the infinitiveList
+                    infinitiveScoresList.append(score) #add the corresponding score to the infinitiveScoreList
+        for i in range(3):
+            maxScore = max(infinitiveScoresList) # pull the max score from the scores list
+            maxScoreIndex = infinitiveScoresList.index(maxScore) # find the index for the element with the max score
+            bestMatchList.append(infinitiveList[maxScoreIndex]) # use that index to find the corresponding infinitive
+            del(infinitiveList[maxScoreIndex])
+            del(infinitiveScoresList[maxScoreIndex])# delete the score and infinitive for the first best match
+        return bestMatchList
 
 
 
+    def verbListtoDictKey(self, string):
+        """string - a verb as listed in an item in the QverbList widget (e.g. "0001 быть") and returns the shelve dictionary key for that listing"""
+        transliterateDict = {'а':'a',
+                             'б':'b',
+                             'в':'v',
+                             'г':'g',
+                             'д':'d',
+                             'е':'je',
+                             'ё':'jo',
+                             'ж':'zh',
+                             'з':'z',
+                             'и':'i',
+                             'й':'j',
+                             'к':'k',
+                             'л':'l',
+                             'м':'m',
+                             'н':'n',
+                             'о':'o',
+                             'п':'p',
+                             'р':'r',
+                             'с':'s',
+                             'т':'t',
+                             'у':'u',
+                             'ф':'f',
+                             'х':'kh',
+                             'ц':'ts',
+                             'ч':'ch',
+                             'ш':'sh',
+                             'щ':'shch',
+                             'ъ':'',
+                             'ы':'y',
+                             'ь':'',
+                             'э':'e',
+                             'ю':'ju',
+                             'я':'ja',
+                             chr(769):''}
+        result = ""
+        for letter in string:
+            result += transliterateDict.get(letter, letter)
+        result = result.replace(' ',''""'')
+        return result
 
 
 if __name__ == '__main__':

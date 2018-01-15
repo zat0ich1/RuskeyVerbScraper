@@ -142,6 +142,13 @@ class verb(object):
                 for i in range(len(strippedList)):
                     strippedList[i] = strippedList[i].lower()
             return strippedList
+    def get_verbForList(self):
+        """returns a string consisting of the z-filled frequency rank, a space, and the infinitive form"""
+        freqstr = self.frequencyRank.zfill(4) + " "
+        return freqstr + self.infinitive
+    def get_numExamples(self):
+        """returns the number of examples for a given verb"""
+        return len(self.examplesList)
     def get_examplesListTranslations(self):
         """returns a list of translations of the russian example sentences; the indices for these match the indices in the corresponding examples list"""
         return self.examplesListTranslations
@@ -1045,6 +1052,14 @@ class verb(object):
 
 fileList = os.listdir('./verbs')
 fileList.sort()
+# for file in fileList:
+#     if file[-4:] == '.txt':
+#        with shelve.open('./verbs/verbsDB') as verbShelf:
+#            currentVerb = verb(file)
+#            verbShelf[file[:-4]] = currentVerb
+# with shelve.open('./verbs/verbsDB') as verbShelf:
+#     verbShelf['users'] = []
+
 if 'verbsDB' not in fileList:
     for file in fileList:
         if file[-4:] == '.txt':
