@@ -160,7 +160,7 @@ class verb(object):
         return self.verbAudioList[-1]
     def get_randomizedExamplesList(self):
         """returns a list of randomized example sentences; each member of the list is a list of the words in the example in random order\n
-        e.g. the example sentence 'Я была с ним честной' becomes ['Я', 'с', 'была', 'ним', 'честной'] (this list would be a member of the list returned)"""
+        e.g. the example sentence 'Я была с ним честной' becomes ['Я', 'с', 'была', 'ним', 'честной'] (this list would be an element of the list returned)"""
         randomizedExamples = []
         for string in self.examplesList:
             string = string.replace(',','')
