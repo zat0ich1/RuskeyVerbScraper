@@ -38,9 +38,10 @@ class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center 
         self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
 
 class QtVFixedLabel(QtGui.QLabel): #custom version of the QLabel class that sets vertical policy to fixed by default
-    def __init__(self,text):
+    def __init__(self,text=''):
         QtGui.QLabel.__init__(self, text='')
         self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
+        self.setText(text)
 
 class QtFixedTextBox(QtGui.QTextEdit):
     def __init__(self, text=''):
@@ -478,7 +479,7 @@ class mainWindow(QtGui.QMainWindow):
         self.QcustomQuizList.takeItem(rownum)
 
     def playConjugationAudio(self):
-        verbAudio = './verbs/' + self.verbListtoDictKey(self.QverbList.currentItem().text()) + '.mp3'
+        verbAudio = './verbAudio/' + self.verbListtoDictKey(self.QverbList.currentItem().text()) + '.mp3'
         playsound(verbAudio)
 
 
@@ -585,22 +586,49 @@ class mainWindow(QtGui.QMainWindow):
         #Study widget for infinitive - just displays the infinitive
         self.QsessionStudyInfinitiveWidget = QtGui.QWidget()
         self.QsessionStudyInfinitiveGrid = QtGui.QGridLayout()
-        self.QsessionStudyInfinitiveInfo = QtGui.QLabel('You will be quizzed on the following infinitive:')
+        self.QsessionStudyInfinitiveInfo = QtVFixedLabel('You will be quizzed on the following infinitive:')
         self.QsessionStudyInfinitiveForm = QtDisplay()
         self.QsessionStudyInfinitiveMeaning = QtFixedTextBox()
         self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveInfo)
         self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveForm)
         self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveMeaning)
         self.QsessionStudyInfinitiveWidget.setLayout(self.QsessionStudyInfinitiveGrid)
-        self.QsessionGrid.addWidget(self.QsessionStudyInfinitiveWidget)
-        self.QsessionStudyInfinitiveWidget.hide()
+        self.QsessionGrid.addWidget(self.QsessionStudyInfinitiveWidget,0,0,1,2)
+        # self.QsessionStudyInfinitiveWidget.hide()
         #=================================================
+        self.QsessionQuizInfinitiveWidget = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
+        self.QsessionQuizInfinitiveGrid = QtGui.QGridLayout()
+        self.QsessionQuizInfinitiveInfo = QtVFixedLabel('Select the Russian verb meaning:')
+        self.QsessionQuizInfinitiveMeaning = QtDisplayLong()
+        self.QsessionQuizInfinitiveBtnGroup = QtGui.QButtonGroup(self.QsessionQuizInfinitiveWidget)
+        self.QsessionQuizInfinitiveOptionA = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveOptionB = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveOptionC = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveOptionD = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionA)
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionB)
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionC)
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionD)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveInfo,0,0,1,4)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveMeaning,1,0,1,4)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionA,2,0,1,1)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionB,2,1,1,1)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionC,2,2,1,1)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionD,2,3,1,1)
+        self.QsessionQuizInfinitiveWidget.setLayout(self.QsessionQuizInfinitiveGrid)
+        self.QsessionGrid.addWidget(self.QsessionQuizInfinitiveWidget,0,0,1,2)
+        self.QsessionQuizInfinitiveWidget.hide()
 
-        self.QsessionQuizInfinitive = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
+        #=================================================
+        #Widgets for verb progress and quiz progress that are always displayed on the bottom of the session window
+        self.QverbProgressLabel = QtVFixedLabel('Verb Progress')
+        self.QquizProgressLabel = QtVFixedLabel('Quiz Progress')
         self.QverbProgressBar = QtGui.QProgressBar()
         self.QquizProgressBar = QtGui.QProgressBar()
-        self.QsessionGrid.addWidget(self.QverbProgressBar)
-        self.QsessionGrid.addWidget(self.QquizProgressBar)
+        self.QsessionGrid.addWidget(self.QverbProgressLabel,1,0,1,1)
+        self.QsessionGrid.addWidget(self.QquizProgressLabel,2,0,1,1)
+        self.QsessionGrid.addWidget(self.QverbProgressBar,1,1,1,1)
+        self.QsessionGrid.addWidget(self.QquizProgressBar,2,1,1,1)
         self.QsessionWindow.setLayout(self.QsessionGrid)
         self.QsessionWindow.exec_()
 

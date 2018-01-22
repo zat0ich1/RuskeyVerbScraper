@@ -37,7 +37,7 @@ def getAudio(fileNameStr, translateString, voiceName='Tatyana', mode='text'):
             except:
                 print("An error occurred when requesting audio for",translateString)
 for file in fileList:
-    audioFileName = './verbs/' + file[:-4] + '.mp3' #grabs text file name and replace .txt with .mp3
+    audioFileName = './verbAudio/' + file[:-4] + '.mp3' #grabs text file name and replace .txt with .mp3
     with open('./verbs/'+ file, 'r') as verbFile: #open each file in the ./verbs directory
         verbFileLinesList = verbFile.readlines() #create a list containing each line of the file as an element
         verbFormsString = "<speak>"+verbFileLinesList[0] + '<break time="0.5s"/>'#add a ssml .5 second break after the infinitive
