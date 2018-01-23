@@ -366,6 +366,101 @@ class mainWindow(QtGui.QMainWindow):
         self.QautoQuizBtn.clicked.connect(self.autoQuizSession)
         self.QautoStudyBtn.clicked.connect(self.autoStudySession)
 
+        #==============================================
+        # About window - this window dialog will be executed when the user clicks the "about" link in the file menu
+        #==============================================
+        self.QaboutWindow = QtGui.QMessageBox(self)
+        self.QaboutWindow.setGeometry(150,150,300,300)
+        self.QaboutWindow.setText("RusKey is an opensource project developed by Eli Ginsburg-Marcy. The examples, conjugations, and frequency rankings it contains are derived from data scraped from en.openrussian.org")
+        self.QaboutWindow.setWindowTitle("About RusKey")
+        self.QaboutWindow.setIcon(QtGui.QMessageBox.Information)
+        self.QaboutWindow.setStandardButtons(QtGui.QMessageBox.Close)
+
+        #==============================================
+        # Manage User Window - executed when the user clicks change user in the main window or manage users from the main menu
+        #==============================================
+        self.QmanageUsersWindow = QtGui.QDialog(self)
+        self.QmanageUsersWindow.setWindowFlags(QtCore.Qt.Window)
+        self.QmanageUsersWindow.setGeometry(150,150,400,400)
+        self.QmanageUsersGrid = QtGui.QGridLayout()
+        self.QuserDispLabelMgUsers = QtVFixedLabel("Current User:")
+        self.QuserDisplayMgUsers = QtDisplay()
+        self.QuserDisplayMgUsers.setText(self.user)
+        self.QchangeUserBtnMgUsers = QtGui.QPushButton("Change to Selected User")
+        self.QdeleteUserBtn = QtGui.QPushButton("Delete Selected User")
+        self.QuserList = QtGui.QListWidget()
+        self.QuserList.addItems(self.getUserList())
+        self.QmanageUsersGrid.addWidget(self.QuserDispLabelMgUsers,0,0,1,1)
+        self.QmanageUsersGrid.addWidget(self.QuserDisplayMgUsers,0,1,1,1)
+        self.QmanageUsersGrid.addWidget(self.QchangeUserBtnMgUsers,1,0,1,2)
+        self.QmanageUsersGrid.addWidget(self.QdeleteUserBtn,2,0,1,2)
+        self.QmanageUsersGrid.addWidget(self.QuserList,3,0,1,2)
+        self.QmanageUsersWindow.setLayout(self.QmanageUsersGrid)
+        self.QmanageUsersWindow.setWindowTitle("Manage Users")
+
+
+
+
+        #==============================================
+        # Quiz Window - This dialog will be executed when the user executes a study or quiz session
+        #==============================================
+
+        self.QsessionWindow = QtGui.QDialog(self.QverbBrowser)
+        self.QsessionWindow.setGeometry(150,150,600,400)
+        self.QsessionGrid = QtGui.QGridLayout()
+
+        #The top portion of the session window will change depending on what is being studied/quizzed;
+        #the bottom will consist of two progress bars displaying your progress on the overall quiz and your progress on the individual verbs
+
+        #===============================================
+        #Study widget for infinitive - just displays the infinitive
+        self.QsessionStudyInfinitiveWidget = QtGui.QWidget()
+        self.QsessionStudyInfinitiveGrid = QtGui.QGridLayout()
+        self.QsessionStudyInfinitiveInfo = QtVFixedLabel('You will be quizzed on the following infinitive:')
+        self.QsessionStudyInfinitiveForm = QtDisplay()
+        self.QsessionStudyInfinitiveMeaning = QtFixedTextBox()
+        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveInfo)
+        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveForm)
+        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveMeaning)
+        self.QsessionStudyInfinitiveWidget.setLayout(self.QsessionStudyInfinitiveGrid)
+        self.QsessionGrid.addWidget(self.QsessionStudyInfinitiveWidget,0,0,1,2)
+        # self.QsessionStudyInfinitiveWidget.hide()
+        #=================================================
+        self.QsessionQuizInfinitiveWidget = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
+        self.QsessionQuizInfinitiveGrid = QtGui.QGridLayout()
+        self.QsessionQuizInfinitiveInfo = QtVFixedLabel('Select the Russian verb meaning:')
+        self.QsessionQuizInfinitiveMeaning = QtDisplayLong()
+        self.QsessionQuizInfinitiveBtnGroup = QtGui.QButtonGroup(self.QsessionQuizInfinitiveWidget)
+        self.QsessionQuizInfinitiveOptionA = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveOptionB = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveOptionC = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveOptionD = QtGui.QRadioButton()
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionA)
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionB)
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionC)
+        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionD)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveInfo,0,0,1,4)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveMeaning,1,0,1,4)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionA,2,0,1,1)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionB,2,1,1,1)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionC,2,2,1,1)
+        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionD,2,3,1,1)
+        self.QsessionQuizInfinitiveWidget.setLayout(self.QsessionQuizInfinitiveGrid)
+        self.QsessionGrid.addWidget(self.QsessionQuizInfinitiveWidget,0,0,1,2)
+        self.QsessionQuizInfinitiveWidget.hide()
+
+        #=================================================
+        #Widgets for verb progress and quiz progress that are always displayed on the bottom of the session window
+        self.QverbProgressLabel = QtVFixedLabel('Verb Progress')
+        self.QquizProgressLabel = QtVFixedLabel('Quiz Progress')
+        self.QverbProgressBar = QtGui.QProgressBar()
+        self.QquizProgressBar = QtGui.QProgressBar()
+        self.QsessionGrid.addWidget(self.QverbProgressLabel,1,0,1,1)
+        self.QsessionGrid.addWidget(self.QquizProgressLabel,2,0,1,1)
+        self.QsessionGrid.addWidget(self.QverbProgressBar,1,1,1,1)
+        self.QsessionGrid.addWidget(self.QquizProgressBar,2,1,1,1)
+        self.QsessionWindow.setLayout(self.QsessionGrid)
+
     def populateVerb(self): #function to update conjugation display when new verb in QverbList is selected
         with shelve.open('./verbs/verbsDB') as verbShelf:
             verbKey = self.verbListtoDictKey(self.QverbList.currentItem().text())
@@ -389,12 +484,6 @@ class mainWindow(QtGui.QMainWindow):
             self.QdateDisplay.setText(targetVerb.get_nextStudyDateDisplay(self.user))
 
     def aboutAction(self):
-        self.QaboutWindow = QtGui.QMessageBox(self)
-        self.QaboutWindow.setGeometry(150,150,300,300)
-        self.QaboutWindow.setText("RusKey is an opensource project developed by Eli Ginsburg-Marcy. The examples, conjugations, and frequency rankings it contains are derived from data scraped from en.openrussian.org")
-        self.QaboutWindow.setWindowTitle("About RusKey")
-        self.QaboutWindow.setIcon(QtGui.QMessageBox.Information)
-        self.QaboutWindow.setStandardButtons(QtGui.QMessageBox.Close)
         self.QaboutWindow.exec_()
 
     def getUserList(self):
@@ -407,24 +496,7 @@ class mainWindow(QtGui.QMainWindow):
         return userList
 
     def manageUsers(self):
-        self.QmanageUsersWindow = QtGui.QDialog(self)
-        self.QmanageUsersWindow.setWindowFlags(QtCore.Qt.Window)
-        self.QmanageUsersWindow.setGeometry(150,150,400,400)
-        self.QmanageUsersGrid = QtGui.QGridLayout()
-        self.QuserDispLabelMgUsers = QtVFixedLabel("Current User:")
-        self.QuserDisplayMgUsers = QtDisplay()
-        self.QuserDisplayMgUsers.setText(self.user)
-        self.QchangeUserBtnMgUsers = QtGui.QPushButton("Change to Selected User")
-        self.QdeleteUserBtn = QtGui.QPushButton("Delete Selected User")
-        self.QuserList = QtGui.QListWidget()
-        self.QuserList.addItems(self.getUserList())
-        self.QmanageUsersGrid.addWidget(self.QuserDispLabelMgUsers,0,0,1,1)
-        self.QmanageUsersGrid.addWidget(self.QuserDisplayMgUsers,0,1,1,1)
-        self.QmanageUsersGrid.addWidget(self.QchangeUserBtnMgUsers,1,0,1,2)
-        self.QmanageUsersGrid.addWidget(self.QdeleteUserBtn,2,0,1,2)
-        self.QmanageUsersGrid.addWidget(self.QuserList,3,0,1,2)
-        self.QmanageUsersWindow.setLayout(self.QmanageUsersGrid)
-        self.QmanageUsersWindow.setWindowTitle("Manage Users")
+
 
         self.QuserList.setCurrentRow(0)
         def verifyChangeUserBox():
@@ -574,62 +646,6 @@ class mainWindow(QtGui.QMainWindow):
         # first showing infinitives and meanings, then showing the first example, then the second, etc.;
         #self.sessionExampleMax will determine how many iterations are needed to exhaust the verb with the most examples
         print(self.sessionExampleMax)
-
-        self.QsessionWindow = QtGui.QDialog(self.QverbBrowser)
-        self.QsessionWindow.setGeometry(150,150,600,400)
-        self.QsessionGrid = QtGui.QGridLayout()
-
-        #The top portion of the session window will change depending on what is being studied/quizzed;
-        #the bottom will consist of two progress bars displaying your progress on the overall quiz and your progress on the individual verbs
-
-        #===============================================
-        #Study widget for infinitive - just displays the infinitive
-        self.QsessionStudyInfinitiveWidget = QtGui.QWidget()
-        self.QsessionStudyInfinitiveGrid = QtGui.QGridLayout()
-        self.QsessionStudyInfinitiveInfo = QtVFixedLabel('You will be quizzed on the following infinitive:')
-        self.QsessionStudyInfinitiveForm = QtDisplay()
-        self.QsessionStudyInfinitiveMeaning = QtFixedTextBox()
-        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveInfo)
-        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveForm)
-        self.QsessionStudyInfinitiveGrid.addWidget(self.QsessionStudyInfinitiveMeaning)
-        self.QsessionStudyInfinitiveWidget.setLayout(self.QsessionStudyInfinitiveGrid)
-        self.QsessionGrid.addWidget(self.QsessionStudyInfinitiveWidget,0,0,1,2)
-        # self.QsessionStudyInfinitiveWidget.hide()
-        #=================================================
-        self.QsessionQuizInfinitiveWidget = QtGui.QWidget() #this widget will be used to quiz the user on the meaning/infinitive of the verb
-        self.QsessionQuizInfinitiveGrid = QtGui.QGridLayout()
-        self.QsessionQuizInfinitiveInfo = QtVFixedLabel('Select the Russian verb meaning:')
-        self.QsessionQuizInfinitiveMeaning = QtDisplayLong()
-        self.QsessionQuizInfinitiveBtnGroup = QtGui.QButtonGroup(self.QsessionQuizInfinitiveWidget)
-        self.QsessionQuizInfinitiveOptionA = QtGui.QRadioButton()
-        self.QsessionQuizInfinitiveOptionB = QtGui.QRadioButton()
-        self.QsessionQuizInfinitiveOptionC = QtGui.QRadioButton()
-        self.QsessionQuizInfinitiveOptionD = QtGui.QRadioButton()
-        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionA)
-        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionB)
-        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionC)
-        self.QsessionQuizInfinitiveBtnGroup.addButton(self.QsessionQuizInfinitiveOptionD)
-        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveInfo,0,0,1,4)
-        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveMeaning,1,0,1,4)
-        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionA,2,0,1,1)
-        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionB,2,1,1,1)
-        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionC,2,2,1,1)
-        self.QsessionQuizInfinitiveGrid.addWidget(self.QsessionQuizInfinitiveOptionD,2,3,1,1)
-        self.QsessionQuizInfinitiveWidget.setLayout(self.QsessionQuizInfinitiveGrid)
-        self.QsessionGrid.addWidget(self.QsessionQuizInfinitiveWidget,0,0,1,2)
-        self.QsessionQuizInfinitiveWidget.hide()
-
-        #=================================================
-        #Widgets for verb progress and quiz progress that are always displayed on the bottom of the session window
-        self.QverbProgressLabel = QtVFixedLabel('Verb Progress')
-        self.QquizProgressLabel = QtVFixedLabel('Quiz Progress')
-        self.QverbProgressBar = QtGui.QProgressBar()
-        self.QquizProgressBar = QtGui.QProgressBar()
-        self.QsessionGrid.addWidget(self.QverbProgressLabel,1,0,1,1)
-        self.QsessionGrid.addWidget(self.QquizProgressLabel,2,0,1,1)
-        self.QsessionGrid.addWidget(self.QverbProgressBar,1,1,1,1)
-        self.QsessionGrid.addWidget(self.QquizProgressBar,2,1,1,1)
-        self.QsessionWindow.setLayout(self.QsessionGrid)
         self.QsessionWindow.exec_()
 
     def getBestMatches(self, shelf, infinitive):
