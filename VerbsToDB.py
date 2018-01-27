@@ -104,7 +104,8 @@ class verb(object):
         for i in range(len(self.examplesList)):
             self.cursor.execute('INSERT INTO examples(verbID, example, translation, exampleAudio) VALUES(?,?,?,?)',
                                 (self.target, self.examplesList[i], self.examplesListTranslations[i], self.verbAudioList[i]))
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS users(userName TEXT, exampleID REFERENCES examples(exampleID), easinessFactor REAL, lastInterval INT, dateLastStudied TEXT, previouslyStudied BOOLEAN, dueDate TEXT)')
+        self.cursor.execute('CREATE TABLE IF NOT EXISTS users(userName TEXT, exampleID REFERENCES examples(exampleID), verbID REFERENCES verbCards(verbID), easinessFactor REAL, lastInterval INT, dateLastStudied TEXT, dueDate TEXT)')
+        self.cursor.execute('CREATE TABLE IF NOT EXISTS userAverage(userName REFERENCES user(userName), verbID REFERENCES verbCards(verbID), easinessFactor REAL, lastInterval INT, dateLastStudied TEXT, dueDate TEXT, previouslyStudied BOOLEAN)')
         self.conn.commit()
         self.cursor.close()
         self.conn.close()

@@ -12,13 +12,122 @@ import datetime
 import random
 from PyQt4 import QtCore
 
+def listAverage(someList, returninteger=False):
 
-def get_infinitive(infinitive):
-    """infinitive - a string containing the transliterated version of the verb whose russian infinitive you wish to retrieve;
-    returns the Russian form of the infinitive"""
+    mySum = 0
+    for i in range(len(someList)):
+        mySum += someList[i][0]
+    myLen = len(someList)
+    if returninteger:
+        return int(mySum/myLen)
+    else:
+        return round(mySum/myLen,2)
+
+def add_user(name):
+    """adds a user to the users table and populates default values for each
+    example in the following columns: easiness factor (2.5), last interval (1);
+    previously studied (false); date last studied (today); due date (date last
+    studied + last interval)"""
     conn = sqlite3.connect('./verbsSQLDB')
     cursor = conn.cursor()
-    cursor.execute('SELECT infinitive FROM verbCards WHERE transInfinitive=?',(infinitive,))
+    cursor.execute('SELECT userName FROM users WHERE userName=?',(name,)) #check
+    testForUser = cursor.fetchall() #if user is already in DB
+    if testForUser == []:
+        cursor.execute('SELECT exampleID, verbID FROM examples')
+        dateLastStudied = QtCore.QDate.currentDate().toString(QtCore.Qt.ISODate)
+        lastInterval = 1
+        easinessFactor = 2.5
+        previouslyStudied = False
+        dueDate = QtCore.QDate.currentDate().addDays(1).toString(QtCore.Qt.ISODate)
+        for i in cursor.fetchall():
+            print(i)
+            cursor.execute('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)',
+                           (name, int(i[0]), int(i[1]), easinessFactor, lastInterval,
+                            dateLastStudied,  dueDate))
+        conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def del_user(name):
+    """removes a user from the user table"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users WHERE userName=?',(name,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def populate_average(verb, user):
+    """verb - transliterated version of a russian infinitive; user - the name of
+    a user in the users DB; calculates the average scores for all examples
+    linked with a given verb and stores it in the userAverage table; this data
+    will be used to determine the display order of verbs and to provide the
+    user with a sense of how overdue something is."""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute('SELECT userName FROM users WHERE username=?',(user,))
+    testForUser = cursor.fetchall()
+    if testForUser != []:
+        cursor.execute('SELECT verbID FROM verbCards WHERE transInfinitive=?',(verb,))
+        targetID = cursor.fetchone()
+        targetID = targetID[0]
+        print(targetID)
+        cursor.execute('SELECT easinessFactor FROM users where verbID=?',(targetID,))
+        easinessList = cursor.fetchall()
+        print(easinessList)
+        easinessAverage = listAverage(easinessList)
+        cursor.execute('SELECT lastInterval FROM users where verbID=?',(targetID,))
+        intervalList = cursor.fetchall()
+        intervalAverage = listAverage(intervalList, returninteger=True)
+        cursor.execute('SELECT dateLastStudied FROM users ORDER BY dateLastStudied ASC')
+        earliestDate = cursor.fetchone()
+        earliestDate = earliestDate[0]
+        cursor.execute('SELECT dueDate FROM users ORDER BY dueDate ASC')
+        earliestDueDate = cursor.fetchone()
+        earliestDueDate = earliestDueDate[0]
+        cursor.execute('INSERT INTO userAverage VALUES (?, ?, ?, ?, ?, ?, ?)',
+                       (user, targetID, easinessAverage, intervalAverage,
+                        earliestDate, earliestDueDate, False))
+        conn.commit()
+    cursor.close()
+    conn.close() #need to insert a verbID column into the users table
+
+populate_average('byt', 'TIM')
+
+
+
+
+# def get_conjugation(verb):
+#     """verb - the transliterated string version of a russian infinitive; returns
+#     a list that is used to populate the verb browser interface with forms;
+#     the list has the following: [0] infinitive, [1] meaning, [2] aspect,
+#     [3] fequency, [4] indicative first person singular,
+#     [5]indicative second person singular, [6] indicative third person singular,
+#     [7] indicative first person plural, [8] indicative second person plural,
+#     [9] indicative third person plural, [10] imperative singular,
+#     [11] imperative plural, [12] masculine past, [13] feminine past,
+#     [14] neuter past, [15] plural past, [16] due date (if previously studied)
+#     or "not previously studied""""
+#     conn = sqlite3.connect('./verbsSQLDB')
+#     cursor = conn.cursor()
+#     cursor.execute("""SELECT infinitive, meaning, aspect, frequency, firstSg,
+#                    secondSg, thirdSg, firstPl, secondPl, thirdPl, imperativeSg,
+#                    imperativePl, pastMasc, pastFem, pastNeut, pastPl,  WHERE
+#                    transInfinitive=?""", (verb,))
+#     result = cursor.fetchall()
+#     cursor.execute("""SELECT""") #need to create new table to store average
+#     #values for verb card due dates
+
+
+def get_infinitive(infinitive):
+    """infinitive - a string containing the transliterated version of the verb
+    whose russian infinitive you wish to retrieve; returns the Russian form of
+    the infinitive"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute('SELECT infinitive FROM verbCards WHERE transInfinitive=?',
+                   (infinitive,))
     result = cursor.fetchone()
     result = result[0]
     cursor.close()
@@ -86,7 +195,7 @@ def get_indicativeSecondSg(infinitive):
     conn.close()
     return result
 
-print(get_indicativeSecondSg('khotjet'))
+
 #     """returns a string containing the non-past indicative 2nd person singular form of the verb"""
 #     return self.indicativeSecondSg
 # def get_indicativeThirdSg(self):
