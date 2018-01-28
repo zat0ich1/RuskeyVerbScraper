@@ -10,6 +10,7 @@ import sys
 import os
 import shelve
 import random
+import VerbsFromDB as DB
 from fuzzywuzzy import fuzz
 from playsound import playsound
 from ShelveVerbs import verb
@@ -54,7 +55,7 @@ class mainWindow(QtGui.QMainWindow):
         self.QverbBrowser = QtGui.QWidget()
         with shelve.open('./verbs/verbsDB') as verbShelf:
             print(verbShelf['users'])
-            self.user = self.changeUserMsgBox(self.QverbBrowser, verbShelf['users']) #creates a dialog box for choosing a user
+            self.user = self.changeUserMsgBox(self.QverbBrowser, DB.get_userlist()) #creates a dialog box for choosing a user
             if self.user not in verbShelf['users']:
                 temp = []
                 for u in verbShelf['users']:

@@ -13,7 +13,8 @@ import random
 from PyQt4 import QtCore
 
 def listAverage(someList, returninteger=False):
-
+    """takes a list of numbers and an optional parameter to return an integer
+    value; returns an average of the values in the list"""
     mySum = 0
     for i in range(len(someList)):
         mySum += someList[i][0]
@@ -22,6 +23,85 @@ def listAverage(someList, returninteger=False):
         return int(mySum/myLen)
     else:
         return round(mySum/myLen,2)
+
+def set_daysOverdue(verb, user):
+    """verb - transliterated form of a russian verb (string);
+    user - name of user (string); calculates how many days overdue
+    a verb is based on the current date and updates the appropriate
+    row in the userAverage table"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT dueDate, userAverage.verbID FROM userAverage
+                   INNER JOIN verbCards ON userAverage.verbID = verbCards.verbID
+                   WHERE verbCards.transInfinitive=? AND userAverage.userName=?
+                   """, (verb, user))
+    verbDueDate = cursor.fetchall()
+    targetVerbID = verbDueDate[0][1]
+    verbDueDate = verbDueDate[0][0]
+    verbDueDate = QtCore.QDate.fromString(verbDueDate, QtCore.Qt.ISODate)
+    daysOverdue = verbDueDate.daysTo(QtCore.QDate.currentDate())
+    cursor.execute("""UPDATE userAverage SET  daysOverdue=?
+                   WHERE verbID=?""",
+                   (daysOverdue, targetVerbID))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def populate_average(verb, user):
+    """verb - transliterated version of a russian infinitive or the verbID of a
+    Russian verb; user - the name of a user in the users DB; calculates the
+    average scores for all examples linked with a given verb and stores it in
+    the userAverage table; this data will be used to determine the display
+    order of verbs and to provide the user with a sense of how overdue
+    something is."""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute('SELECT userName FROM users WHERE username=?',(user,))
+    testForUser = cursor.fetchall()
+    if type(verb) == int:
+        targetID = verb
+    if type(verb) != int:
+        cursor.execute('SELECT verbID FROM verbCards WHERE transInfinitive=?',
+                       (verb,))
+        targetID = cursor.fetchone()
+        targetID = targetID[0]
+    cursor.execute('SELECT verbID FROM userAverage WHERE verbID=? AND userName=?',
+                   (targetID, user))
+    testForVerb = cursor.fetchall()
+    if testForUser != []:
+        cursor.execute('SELECT easinessFactor FROM users where verbID=?',
+                       (targetID,))
+        easinessList = cursor.fetchall()
+
+        easinessAverage = listAverage(easinessList)
+        cursor.execute('SELECT lastInterval FROM users where verbID=?',
+                       (targetID,))
+        intervalList = cursor.fetchall()
+        intervalAverage = listAverage(intervalList, returninteger=True)
+        cursor.execute("""SELECT dateLastStudied FROM users
+                       ORDER BY dateLastStudied ASC""")
+        earliestDate = cursor.fetchone()
+        earliestDate = earliestDate[0]
+        cursor.execute('SELECT dueDate FROM users ORDER BY dueDate ASC')
+        earliestDueDate = cursor.fetchone()
+        earliestDueDate = earliestDueDate[0]
+        if testForVerb == []:
+            cursor.execute("""INSERT INTO userAverage VALUES
+                           (?, ?, ?, ?, ?, ?, ?, ?)""",
+                           (user, targetID, easinessAverage, intervalAverage,
+                            earliestDate, earliestDueDate, False, 1))
+        else:
+            cursor.execute("""UPDATE userAverage SET easinessFactor=?,
+                           lastInterval=?, dateLastStudied=?, dueDate=?,
+                           previouslyStudied=?, daysOverdue=?, WHERE userName=?
+                           AND verbID=?""",
+                           (easinessAverage, intervalAverage, earliestDate,
+                            earliestDueDate, True, 1, user, targetID))
+                            # need to update with days overdue, not 1
+        conn.commit()
+
+    cursor.close()
+    conn.close()
 
 def add_user(name):
     """adds a user to the users table and populates default values for each
@@ -40,62 +120,85 @@ def add_user(name):
         previouslyStudied = False
         dueDate = QtCore.QDate.currentDate().addDays(1).toString(QtCore.Qt.ISODate)
         for i in cursor.fetchall():
-            print(i)
             cursor.execute('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)',
                            (name, int(i[0]), int(i[1]), easinessFactor, lastInterval,
                             dateLastStudied,  dueDate))
+        cursor.execute('SELECT verbID FROM verbCards')
+        allVerbs = cursor.fetchall() #get a list of tuples; each tuple has only
         conn.commit()
     cursor.close()
     conn.close()
-
+    if testForUser == []:
+        for someVerb in allVerbs: #the verbID
+            someVerbID = someVerb[0] #extract verbID from tuples
+            populate_average(someVerbID, name)
 
 def del_user(name):
     """removes a user from the user table"""
     conn = sqlite3.connect('./verbsSQLDB')
     cursor = conn.cursor()
     cursor.execute('DELETE FROM users WHERE userName=?',(name,))
+    cursor.execute('DELETE FROM userAverage WHERE userName=?',(name,))
     conn.commit()
     cursor.close()
     conn.close()
 
-def populate_average(verb, user):
-    """verb - transliterated version of a russian infinitive; user - the name of
-    a user in the users DB; calculates the average scores for all examples
-    linked with a given verb and stores it in the userAverage table; this data
-    will be used to determine the display order of verbs and to provide the
-    user with a sense of how overdue something is."""
+
+
+def get_userlist():
+    """returns a list of the users in verbsSQLDB"""
     conn = sqlite3.connect('./verbsSQLDB')
     cursor = conn.cursor()
-    cursor.execute('SELECT userName FROM users WHERE username=?',(user,))
-    testForUser = cursor.fetchall()
-    if testForUser != []:
-        cursor.execute('SELECT verbID FROM verbCards WHERE transInfinitive=?',(verb,))
-        targetID = cursor.fetchone()
-        targetID = targetID[0]
-        print(targetID)
-        cursor.execute('SELECT easinessFactor FROM users where verbID=?',(targetID,))
-        easinessList = cursor.fetchall()
-        print(easinessList)
-        easinessAverage = listAverage(easinessList)
-        cursor.execute('SELECT lastInterval FROM users where verbID=?',(targetID,))
-        intervalList = cursor.fetchall()
-        intervalAverage = listAverage(intervalList, returninteger=True)
-        cursor.execute('SELECT dateLastStudied FROM users ORDER BY dateLastStudied ASC')
-        earliestDate = cursor.fetchone()
-        earliestDate = earliestDate[0]
-        cursor.execute('SELECT dueDate FROM users ORDER BY dueDate ASC')
-        earliestDueDate = cursor.fetchone()
-        earliestDueDate = earliestDueDate[0]
-        cursor.execute('INSERT INTO userAverage VALUES (?, ?, ?, ?, ?, ?, ?)',
-                       (user, targetID, easinessAverage, intervalAverage,
-                        earliestDate, earliestDueDate, False))
-        conn.commit()
-    cursor.close()
-    conn.close() #need to insert a verbID column into the users table
+    cursor.execute("""SELECT DISTINCT userName FROM userAverage
+                   ORDER BY userName ASC""")
+    result = []
+    for i in cursor.fetchall():
+        result.append(i[0])
+    return result
 
-populate_average('byt', 'TIM')
+def getSortedVerbList(user):
+    """returns a list of available verbs for the given user; verbs which have
+    previously been studied are sorted at the front of the list by days overdue;
+    other verbs are sorted by frequency rank"""
+    previouslyStudiedList = []
+    notPreviouslyStudiedList = []
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT userAverage.verbID, infinitive FROM userAverage
+                   INNER JOIN verbCards ON verbCards.verbID = userAverage.verbID
+                   WHERE userName=? AND previouslyStudied=?""",
+                   (user, 1)) #need to add days overdue to userAverage table
 
+    for i in cursor.fetchall():
+        freq = str(i[0]).zfill(4) + ' '
+        previouslyStudiedList.append(freq + i[1])
+    cursor.execute("""SELECT userAverage.verbID, infinitive FROM userAverage
+                   INNER JOIN verbCards ON verbCards.verbID = userAverage.verbID
+                   WHERE userName=? AND previouslyStudied=?""",
+                   (user, 0))
+    for i in cursor.fetchall():
+        freq = str(i[0]).zfill(4) + ' '
+        notPreviouslyStudiedList.append(freq + i[1])
+    # previouslyStudiedList.sort(key=lambda x: verbShelf[x].get_daysOverdue(user), reverse=True)
+    # notPreviouslyStudiedList.sort(key=lambda x: verbShelf[x].get_conjugationAudio())#since the conjugation audio file is in the form of a
+                                                                                    #zfilled frequency rank and the transliterated infinitive, this should order the verbs by frequency rank
+    # if len(previouslyStudiedList) > 0:
+    #     for i in range(len(previouslyStudiedList)):# replace transliterated keys with russian infinitives
+    #         newkey = previouslyStudiedList[i]
+    #         previouslyStudiedList[i] = verbShelf[newkey].get_verbForList()
+    # if len(notPreviouslyStudiedList) > 0:
+    #     print(len(notPreviouslyStudiedList))
+    #     for i in range(len(notPreviouslyStudiedList)):# replace transliterated keys with russian infinitives
+    #         print(i)
+    #         newkey = notPreviouslyStudiedList[i]
+    #         notPreviouslyStudiedList[i] = verbShelf[newkey].get_verbForList()
+    return previouslyStudiedList + notPreviouslyStudiedList
 
+set_daysOverdue('byt','Steve')
+
+# add_user('Steve')
+# add_user('Jim')
+# print(get_userlist())
 
 
 # def get_conjugation(verb):

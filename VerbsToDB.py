@@ -37,18 +37,19 @@ class verb(object):
             self.examplesListTranslations = []
             self.verbAudioList = []
             for i in range(16,len(self.verbFileLinesList)-1,2):
-                self.examplesList.append(self.verbFileLinesList[i].replace(u'\n',''))
-                self.examplesListTranslations.append(self.verbFileLinesList[i+1].replace(u'\n',''))
+                self.examplesList.append(
+                    self.verbFileLinesList[i].replace(u'\n',''))
+                self.examplesListTranslations.append(
+                    self.verbFileLinesList[i+1].replace(u'\n',''))
             for i in range(len(self.examplesList)):
-                audioFileName = './verbAudio/' + verbFileName[:-4] + str(i) + '.mp3'
+                audioFileName = ('./verbAudio/'
+                                 + verbFileName[:-4]
+                                 + str(i)
+                                 + '.mp3')
                 self.verbAudioList.append(audioFileName)
-            self.verbAudioList.append('./verbAudio/'+verbFileName[:-4]+'.mp3') #append conjugation audio last so that indexes for examples line up
-            self.easinessFactor = {} # these dictionaries will be used with SM2 algorithm to
-            self.lastInterval = {}     # find out when the object should next be studied; keys are user names
-            self.dateLastStudied = {} # will be updated when first studied
-            self.previouslyStudied = {}
-            self.dueDate = {}
-            self.users = []
+            self.verbAudioList.append('./verbAudio/'
+                                      + verbFileName[:-4]+'.mp3')
+            #append conjugation audio last so that indexes for examples line up
 
             self.transliterateDict = {'а':'a',
                                  'б':'b',
@@ -94,18 +95,54 @@ class verb(object):
     def writeVerb(self):
         self.conn = sqlite3.connect('./verbsSQLDB')
         self.cursor = self.conn.cursor()
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS verbCards(verbID INTEGER PRIMARY KEY, infinitive TEXT, transInfinitive TEXT, aspect TEXT, frequency INT, meaning TEXT, firstSg TEXT, secondSg TEXT, thirdSg TEXT, firstPl TEXT, secondPl TEXT, thirdPl TEXT, imperativeSg TEXT, imperativePl TEXT, pastMasc TEXT, pastFem TEXT, pastNeut TEXT, pastPl Text, conjAudio TEXT)')
-        self.cursor.execute('INSERT INTO verbCards (infinitive, transinfinitive, aspect, frequency, meaning, firstSg, secondSg, thirdSg, firstPl, secondPl, thirdPl, imperativeSg, imperativePl, pastMasc, pastFem, pastNeut, pastPl, conjAudio) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                                (self.infinitive, self.transliterate(), self.aspect, self.frequencyRank, self.meaning, self.indicativeFirstSg, self.indicativeSecondSg, self.indicativeThirdSg, self.indicativeFirstPl, self.indicativeSecondPl, self.indicativeThirdPl, self.imperativeSg, self.imperativePl, self.pastMasc, self.pastFem, self.pastNeut, self.pastPl, self.verbAudioList[-1]))
-        self.cursor.execute('SELECT verbID FROM verbCards WHERE infinitive=?', (self.infinitive,))
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS verbCards(verbID
+                            INTEGER PRIMARY KEY, infinitive TEXT,
+                            transInfinitive TEXT, aspect TEXT, frequency INT,
+                            meaning TEXT, firstSg TEXT, secondSg TEXT,
+                            thirdSg TEXT, firstPl TEXT, secondPl TEXT,
+                            thirdPl TEXT, imperativeSg TEXT, imperativePl TEXT,
+                            pastMasc TEXT, pastFem TEXT, pastNeut TEXT,
+                            pastPl Text, conjAudio TEXT)""")
+        self.cursor.execute("""INSERT INTO verbCards (infinitive,
+                            transinfinitive, aspect, frequency, meaning,
+                            firstSg, secondSg, thirdSg, firstPl, secondPl,
+                            thirdPl, imperativeSg, imperativePl, pastMasc,
+                            pastFem, pastNeut, pastPl, conjAudio) VALUES(?, ?,
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (self.infinitive, self.transliterate(), self.aspect,
+                             self.frequencyRank, self.meaning,
+                             self.indicativeFirstSg, self.indicativeSecondSg,
+                             self.indicativeThirdSg, self.indicativeFirstPl,
+                             self.indicativeSecondPl, self.indicativeThirdPl,
+                             self.imperativeSg, self.imperativePl,
+                             self.pastMasc, self.pastFem, self.pastNeut,
+                             self.pastPl, self.verbAudioList[-1]))
+        self.cursor.execute('SELECT verbID FROM verbCards WHERE infinitive=?',
+                            (self.infinitive,))
         self.target = self.cursor.fetchone()
         self.target = self.target[0]
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS examples(exampleID INTEGER PRIMARY KEY, verbID REFERENCES verbCards(verbID), example TEXT, translation TEXT, exampleAudio TEXT)')
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS examples(
+                            exampleID INTEGER PRIMARY KEY,
+                            verbID REFERENCES verbCards(verbID),
+                            example TEXT, translation TEXT,
+                            exampleAudio TEXT)""")
         for i in range(len(self.examplesList)):
-            self.cursor.execute('INSERT INTO examples(verbID, example, translation, exampleAudio) VALUES(?,?,?,?)',
-                                (self.target, self.examplesList[i], self.examplesListTranslations[i], self.verbAudioList[i]))
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS users(userName TEXT, exampleID REFERENCES examples(exampleID), verbID REFERENCES verbCards(verbID), easinessFactor REAL, lastInterval INT, dateLastStudied TEXT, dueDate TEXT)')
-        self.cursor.execute('CREATE TABLE IF NOT EXISTS userAverage(userName REFERENCES user(userName), verbID REFERENCES verbCards(verbID), easinessFactor REAL, lastInterval INT, dateLastStudied TEXT, dueDate TEXT, previouslyStudied BOOLEAN)')
+            self.cursor.execute("""INSERT INTO examples(verbID, example,
+                                translation, exampleAudio) VALUES(?,?,?,?)""",
+                                (self.target, self.examplesList[i],
+                                 self.examplesListTranslations[i],
+                                 self.verbAudioList[i]))
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS users(userName TEXT,
+                            exampleID REFERENCES examples(exampleID),
+                            verbID REFERENCES verbCards(verbID),
+                            easinessFactor REAL, lastInterval INT,
+                            dateLastStudied TEXT, dueDate TEXT)""")
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS
+                            userAverage(userName REFERENCES user(userName),
+                            verbID REFERENCES verbCards(verbID),
+                            easinessFactor REAL, lastInterval INT,
+                            dateLastStudied TEXT, dueDate TEXT,
+                            previouslyStudied BOOLEAN, daysOverdue INT)""")
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
