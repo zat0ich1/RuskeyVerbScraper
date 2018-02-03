@@ -18,18 +18,21 @@ from PyQt4 import QtGui
 from PyQt4 import QtCore
 
 
-class QtDisplay(QtGui.QLineEdit): #custom version of QLineEdit class that disables editing by default
+class QtDisplay(QtGui.QLineEdit): #custom version of QLineEdit class that
+                                    # disables editing by default
     def __init__(self):
         QtGui.QLineEdit.__init__(self)
         QtGui.QLineEdit.setReadOnly(self,True)
-class QtDisplayLong(QtGui.QLabel): #custom version of QLabel class that wraps by default (for display of meaning)
+class QtDisplayLong(QtGui.QLabel): #custom version of QLabel class that wraps
+                                    #by default (for display of meaning)
     def __init__(self):
         QtGui.QLabel.__init__(self)
         self.setWordWrap(True)
 
 
 
-class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center aligns, bolds, and sets vertical policy to fixed by default
+class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center
+                    #aligns, bolds, and sets vertical policy to fixed by default
     def __init__(self, text):
         QtGui.QLabel.__init__(self, text='')
         QboldFont = QtGui.QFont()
@@ -38,13 +41,15 @@ class QtSectionLabel(QtGui.QLabel): #custom version of QLabel class that center 
         self.setAlignment(QtCore.Qt.AlignCenter)
         self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
 
-class QtVFixedLabel(QtGui.QLabel): #custom version of the QLabel class that sets vertical policy to fixed by default
+class QtVFixedLabel(QtGui.QLabel): #custom version of the QLabel class that
+                                    #sets vertical policy to fixed by default
     def __init__(self,text=''):
         QtGui.QLabel.__init__(self, text='')
         self.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Fixed)
         self.setText(text)
 
-class QtFixedTextBox(QtGui.QTextEdit):
+class QtFixedTextBox(QtGui.QTextEdit): #custom version of QTextEdit that
+                                        #sets read only by default
     def __init__(self, text=''):
         QtGui.QTextEdit.__init__(self, text)
         QtGui.QTextEdit.setReadOnly(self,True)
@@ -53,21 +58,14 @@ class mainWindow(QtGui.QMainWindow):
     def __init__(self):
         super(mainWindow,self).__init__()
         self.QverbBrowser = QtGui.QWidget()
-        with shelve.open('./verbs/verbsDB') as verbShelf:
-            print(verbShelf['users'])
-            self.user = self.changeUserMsgBox(self.QverbBrowser, DB.get_userlist()) #creates a dialog box for choosing a user
-            if self.user not in verbShelf['users']:
-                temp = []
-                for u in verbShelf['users']:
-                    temp.append(u)
-                temp.append(self.user)
-                verbShelf['users'] = temp #add user to users item in verbShelf (store user permanently if not already stored)
+        self.user = self.changeUserMsgBox(self.QverbBrowser, DB.get_userList()) #creates a dialog box for choosing a user
+        if not DB.userExists(self.user):
+            DB.add_user(self.user)
         self.setGeometry(100,100,800,800)
         self.QmainMenu = self.menuBar()
         self.QfileMenu = self.QmainMenu.addMenu("File")
         self.QfileMenuAbout = QtGui.QAction("About", self.QmainMenu)
         self.QfileMenu.addAction(self.QfileMenuAbout)
-
         self.QfileMenuAbout.triggered.connect(self.aboutAction)
         self.QfileMenuManageUsers = QtGui.QAction("Manage Users", self.QmainMenu)
         self.QfileMenu.addAction(self.QfileMenuManageUsers)
@@ -76,8 +74,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QfileMenu.addAction(self.QfileMenuQuit)
         self.QfileMenuQuit.setShortcut("Ctrl+Q")
         self.QfileMenuQuit.triggered.connect(self.closeApp)
-
-
         #--------------------------------------------
         # GRID LAYOUT
         #--------------------------------------------
@@ -115,7 +111,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QNPIFormsSubGrid = QtGui.QGridLayout()
         self.QNPISubGrid.addLayout(self.QinfoSubGrid,0,0,2,1)
         self.QNPISubGrid.addLayout(self.QNPIFormsSubGrid,3,0,1,1)
-
         #----------------------------------------------
         # NON PAST INDICATIVE AREA LABEL:
         #----------------------------------------------
@@ -133,7 +128,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QinfinitiveBox = QtDisplay()
         self.QinfoSubGrid.addWidget(self.QinfinitiveLabel,1,0,1,1)
         self.QinfoSubGrid.addWidget(self.QinfinitiveBox,1,1,1,1)
-
         #-----------------------------------------------
         # MEANING LABEL AND BOX
         #-----------------------------------------------
@@ -198,10 +192,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QthirdPlBox = QtDisplay()
         self.QNPIFormsSubGrid.addWidget(self.QthirdPlLabel,4,2,1,1)
         self.QNPIFormsSubGrid.addWidget(self.QthirdPlBox,5,2,1,1)
-
-
-
-
         # ---------------------------------------------
         # PAST AND IMPERATIVE FORMS AREA
         #----------------------------------------------
@@ -213,9 +203,6 @@ class mainWindow(QtGui.QMainWindow):
         #
         self.QPastSubGrid = QtGui.QGridLayout()
         self.QverbBrowserGrid.addLayout(self.QPastSubGrid,0,2,1,1)
-    #
-    #
-    #
         #----------------------------------------------
         # PAST AND IMPERATIVE AREA LABEL:
         #----------------------------------------------
@@ -263,14 +250,12 @@ class mainWindow(QtGui.QMainWindow):
         self.QpastPlBox = QtDisplay()
         self.QPastSubGrid.addWidget(self.QpastPlLabel,6,0,1,1)
         self.QPastSubGrid.addWidget(self.QpastPlBox,6,1,1,1)
-
         #-----------------------------------------------
         # DYNAMICALLY ALLOCATED SPACE FOR EXAMPLES - this holder will be populated by a displayVerb function, since the number of examples
         # varies from verb to verb
         #-----------------------------------------------
         self.QexamplesGrid = QtGui.QGridLayout()
         self.QverbBrowserGrid.addLayout(self.QexamplesGrid,1,0,1,3)
-
         #-----------------------------------------------
         # BOTTOM SECIONS
         #-----------------------------------------------
@@ -350,23 +335,21 @@ class mainWindow(QtGui.QMainWindow):
         self.QcustomQuizGrid.addWidget(self.QuserBox,0,1,1,1)
         self.QcustomQuizGrid.addWidget(self.QcustomQuizLabel,1,0,1,2)
         self.QcustomQuizGrid.addWidget(self.QcustomQuizList,2,0,1,2)
-
         self.QverbBrowser.setLayout(self.QverbBrowserGrid)
         self.setWindowTitle("RusKey Verb Browser")
         self.setCentralWidget(self.QverbBrowser)
         self.QuserBox.setText(self.user)
-        self.verbs = self.getSortedVerbList(self.user) #load the verb list in the relevant due date order for user
+        self.verbs = DB.get_SortedVerbList(self.user) #load the verb list in the relevant due date order for user
         self.QverbList.addItems(self.verbs) #add the verbs in order to the QListWidget
         self.QverbList.setCurrentRow(0) #select the first row by default
         self.QplayAudioButton.clicked.connect(self.playConjugationAudio)
         self.populateVerb() #populate the conjugation for the verb in the first row
-        self.QverbList.currentItemChanged.connect(self.populateVerb) # any time a new row is selected, populate the conjugation for that row
+        self.QverbList.itemSelectionChanged.connect(self.populateVerb) # any time a new row is selected, populate the conjugation for that row
         self.QaddToListBtn.clicked.connect(self.addVerbToCustom)
         self.QchangeUserBtn.clicked.connect(self.manageUsers)
         self.QremoveFromListBtn.clicked.connect(self.removeVerbFromCustom)
         self.QautoQuizBtn.clicked.connect(self.autoQuizSession)
         self.QautoStudyBtn.clicked.connect(self.autoStudySession)
-
         #==============================================
         # About window - this window dialog will be executed when the user clicks the "about" link in the file menu
         #==============================================
@@ -376,7 +359,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QaboutWindow.setWindowTitle("About RusKey")
         self.QaboutWindow.setIcon(QtGui.QMessageBox.Information)
         self.QaboutWindow.setStandardButtons(QtGui.QMessageBox.Close)
-
         #==============================================
         # Manage User Window - executed when the user clicks change user in the main window or manage users from the main menu
         #==============================================
@@ -390,7 +372,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QchangeUserBtnMgUsers = QtGui.QPushButton("Change to Selected User")
         self.QdeleteUserBtn = QtGui.QPushButton("Delete Selected User")
         self.QuserList = QtGui.QListWidget()
-        self.QuserList.addItems(self.getUserList())
         self.QmanageUsersGrid.addWidget(self.QuserDispLabelMgUsers,0,0,1,1)
         self.QmanageUsersGrid.addWidget(self.QuserDisplayMgUsers,0,1,1,1)
         self.QmanageUsersGrid.addWidget(self.QchangeUserBtnMgUsers,1,0,1,2)
@@ -398,21 +379,14 @@ class mainWindow(QtGui.QMainWindow):
         self.QmanageUsersGrid.addWidget(self.QuserList,3,0,1,2)
         self.QmanageUsersWindow.setLayout(self.QmanageUsersGrid)
         self.QmanageUsersWindow.setWindowTitle("Manage Users")
-
-
-
-
         #==============================================
         # Quiz Window - This dialog will be executed when the user executes a study or quiz session
         #==============================================
-
         self.QsessionWindow = QtGui.QDialog(self.QverbBrowser)
         self.QsessionWindow.setGeometry(150,150,600,400)
         self.QsessionGrid = QtGui.QGridLayout()
-
         #The top portion of the session window will change depending on what is being studied/quizzed;
         #the bottom will consist of two progress bars displaying your progress on the overall quiz and your progress on the individual verbs
-
         #===============================================
         #Study widget for infinitive - just displays the infinitive
         self.QsessionStudyInfinitiveWidget = QtGui.QWidget()
@@ -449,7 +423,6 @@ class mainWindow(QtGui.QMainWindow):
         self.QsessionQuizInfinitiveWidget.setLayout(self.QsessionQuizInfinitiveGrid)
         self.QsessionGrid.addWidget(self.QsessionQuizInfinitiveWidget,0,0,1,2)
         self.QsessionQuizInfinitiveWidget.hide()
-
         #=================================================
         #Widgets for verb progress and quiz progress that are always displayed on the bottom of the session window
         self.QverbProgressLabel = QtVFixedLabel('Verb Progress')
@@ -462,44 +435,37 @@ class mainWindow(QtGui.QMainWindow):
         self.QsessionGrid.addWidget(self.QquizProgressBar,2,1,1,1)
         self.QsessionWindow.setLayout(self.QsessionGrid)
 
+
     def populateVerb(self): #function to update conjugation display when new verb in QverbList is selected
-        with shelve.open('./verbs/verbsDB') as verbShelf:
-            verbKey = self.verbListtoDictKey(self.QverbList.currentItem().text())
-            targetVerb = verbShelf[verbKey]
-            self.QinfinitiveBox.setText(targetVerb.get_infinitive())
-            self.QmeaningBox.setText(targetVerb.get_meaning())
-            self.QaspectBox.setText(targetVerb.get_aspect())
-            self.QfrequencyBox.setText(targetVerb.get_frequencyRank())
-            self.QfirstSgBox.setText(targetVerb.get_indicativeFirstSg())
-            self.QsecondSgBox.setText(targetVerb.get_indicativeSecondSg())
-            self.QthirdSgBox.setText(targetVerb.get_indicativeThirdSg())
-            self.QfirstPlBox.setText(targetVerb.get_indicativeFirstPl())
-            self.QsecondPlBox.setText(targetVerb.get_indicativeSecondPl())
-            self.QthirdPlBox.setText(targetVerb.get_indicativeThirdPl())
-            self.QimperativeSgBox.setText(targetVerb.get_imperativeSg())
-            self.QimperativePlBox.setText(targetVerb.get_imperativePl())
-            self.QpastMascBox.setText(targetVerb.get_pastMasc())
-            self.QpastFemBox.setText(targetVerb.get_pastFem())
-            self.QpastNeutBox.setText(targetVerb.get_pastNeut())
-            self.QpastPlBox.setText(targetVerb.get_pastPl())
-            self.QdateDisplay.setText(targetVerb.get_nextStudyDateDisplay(self.user))
+        verbKey = self.verbListtoTransInfin(self.QverbList.currentItem().text())
+        print(verbKey)
+        formsList = DB.get_formsList(verbKey)
+        self.QinfinitiveBox.setText(formsList[0])
+        self.QmeaningBox.setText(formsList[1])
+        self.QaspectBox.setText(formsList[2])
+        self.QfrequencyBox.setText(formsList[3])
+        self.QfirstSgBox.setText(formsList[4])
+        self.QsecondSgBox.setText(formsList[5])
+        self.QthirdSgBox.setText(formsList[6])
+        self.QfirstPlBox.setText(formsList[7])
+        self.QsecondPlBox.setText(formsList[8])
+        self.QthirdPlBox.setText(formsList[9])
+        self.QimperativeSgBox.setText(formsList[10])
+        self.QimperativePlBox.setText(formsList[11])
+        self.QpastMascBox.setText(formsList[12])
+        self.QpastFemBox.setText(formsList[13])
+        self.QpastNeutBox.setText(formsList[14])
+        self.QpastPlBox.setText(formsList[15])
+        self.QdateDisplay.setText(DB.get_dueDateText(verbKey, self.user))
+
 
     def aboutAction(self):
         self.QaboutWindow.exec_()
 
-    def getUserList(self):
-        """returns a list of users stored in verbDB['users']"""
-        with shelve.open('./verbs/verbsDB') as verbShelf:
-            userList = []
-            for u in verbShelf['users']:
-                userList.append(u)
-            userList.sort()
-        return userList
 
     def manageUsers(self):
-
-
-        self.QuserList.setCurrentRow(0)
+        self.QverbList.clear()
+        self.QuserList.addItems(DB.get_userList())
         def verifyChangeUserBox():
             """verification window for changing users"""
             self.Qverify = QtGui.QMessageBox(self.QmanageUsersWindow)
@@ -513,8 +479,9 @@ class mainWindow(QtGui.QMainWindow):
                     self.QuserDisplayMgUsers.setText(self.user)
                     self.QuserBox.setText(self.user)
                     self.QverbList.clear()
-                    self.verbs = self.getSortedVerbList(self.user) #load the verb list in the relevant due date order for user
+                    self.verbs = DB.get_SortedVerbList(self.user) #load the verb list in the relevant due date order for user
                     self.QverbList.addItems(self.verbs) #add the verbs in order to the QListWidget
+                    self.QverbList.setCurrentRow(0)
         def deleteUser():
             """verification window for deleting a user"""
             if self.QuserList.currentItem().text() == self.user:
@@ -530,13 +497,9 @@ class mainWindow(QtGui.QMainWindow):
                 self.Qverify.setStandardButtons(QtGui.QMessageBox.No | QtGui.QMessageBox.Yes)
                 result = self.Qverify.exec_()
                 if result == QtGui.QMessageBox.Yes:
-                    userList = self.getUserList()
-                    userList.remove(self.QuserList.currentItem().text())
-                    with shelve.open('./verbs/verbsDB') as verbShelf:
-                        verbShelf['users'] = userList
+                    DB.del_user(self.QuserList.currentItem().text())
                     self.QuserList.clear()
-                    self.QuserList.addItems(self.getUserList())
-
+                    self.QuserList.addItems(DB.get_userList())
 
         self.QdeleteUserBtn.clicked.connect(deleteUser)
         self.QchangeUserBtnMgUsers.clicked.connect(verifyChangeUserBox)
@@ -552,7 +515,8 @@ class mainWindow(QtGui.QMainWindow):
         self.QcustomQuizList.takeItem(rownum)
 
     def playConjugationAudio(self):
-        verbAudio = './verbAudio/' + self.verbListtoDictKey(self.QverbList.currentItem().text()) + '.mp3'
+        verbAudio = './verbAudio/' + self.verbListtoTransInfin(self.QverbList.currentItem().text(),numbers=True) + '.mp3'
+        print(verbAudio)
         playsound(verbAudio)
 
 
@@ -573,32 +537,7 @@ class mainWindow(QtGui.QMainWindow):
 
 
 
-    def getSortedVerbList(self, user):
-        """returns a list of available verbs for the given user; verbs which have previously been studied are sorted at the front of the list by days overdue;
-        other verbs are sorted by frequency rank"""
-        with shelve.open('./verbs/verbsDB') as verbShelf:
-            previouslyStudiedList = []
-            notPreviouslyStudiedList = []
-            for key in verbShelf:
-                if key != 'users':
-                    if verbShelf[key].was_previouslyStudied(user):
-                        previouslyStudiedList.append(key)
-                    else:
-                        notPreviouslyStudiedList.append(key)
-            previouslyStudiedList.sort(key=lambda x: verbShelf[x].get_daysOverdue(user), reverse=True)
-            notPreviouslyStudiedList.sort(key=lambda x: verbShelf[x].get_conjugationAudio())#since the conjugation audio file is in the form of a
-                                                                                            #zfilled frequency rank and the transliterated infinitive, this should order the verbs by frequency rank
-            if len(previouslyStudiedList) > 0:
-                for i in range(len(previouslyStudiedList)):# replace transliterated keys with russian infinitives
-                    newkey = previouslyStudiedList[i]
-                    previouslyStudiedList[i] = verbShelf[newkey].get_verbForList()
-            if len(notPreviouslyStudiedList) > 0:
-                print(len(notPreviouslyStudiedList))
-                for i in range(len(notPreviouslyStudiedList)):# replace transliterated keys with russian infinitives
-                    print(i)
-                    newkey = notPreviouslyStudiedList[i]
-                    notPreviouslyStudiedList[i] = verbShelf[newkey].get_verbForList()
-        return previouslyStudiedList + notPreviouslyStudiedList
+
 
     def autoStudySession(self):
         """grabs the first three non-studied verbs from the QverbList widget and executes a study session.
@@ -670,8 +609,11 @@ class mainWindow(QtGui.QMainWindow):
 
 
 
-    def verbListtoDictKey(self, string):
-        """string - a verb as listed in an item in the QverbList widget (e.g. "0001 быть") and returns the shelve dictionary key for that listing"""
+    def verbListtoTransInfin(self, string, numbers=False):
+        """string - a verb as listed in an item in the QverbList widget
+        (e.g. "0001 быть") and returns the transliterated inifitive, with or
+        without the leading frequency number (depending on the numbers
+        argument, which defaults to False)"""
         transliterateDict = {'а':'a',
                              'б':'b',
                              'в':'v',
@@ -707,8 +649,13 @@ class mainWindow(QtGui.QMainWindow):
                              'я':'ja',
                              chr(769):''}
         result = ""
-        for letter in string:
-            result += transliterateDict.get(letter, letter)
+        if not numbers:
+            for letter in string:
+                result += transliterateDict.get(letter, "")
+        else:
+            for letter in string:
+                result += transliterateDict.get(letter, letter)
+                result = result.replace(' ','')
         result = result.replace(' ',''""'')
         return result
 

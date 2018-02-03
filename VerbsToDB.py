@@ -142,7 +142,7 @@ class verb(object):
                             verbID REFERENCES verbCards(verbID),
                             easinessFactor REAL, lastInterval INT,
                             dateLastStudied TEXT, dueDate TEXT,
-                            previouslyStudied BOOLEAN, daysOverdue INT)""")
+                            previouslyStudied BOOLEAN)""")
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
