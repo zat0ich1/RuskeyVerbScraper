@@ -544,15 +544,14 @@ class mainWindow(QtGui.QMainWindow):
         During the study session, the user is first presented with the conjugation for each of the three verbs,
         then given a brief quiz matching the infinitive to meaning. The process then repeats with each example (i.e.
         the user is presented with one example from each verb and is then quizzed on those three examples)"""
-        with shelve.open('./verbs/verbsDB') as verbShelf:
-            self.studyVerbs = []
-            for i in range(self.QverbList.count()):
-                if len(self.studyVerbs) > 2:
-                    break
-                key = self.verbListtoDictKey(self.QverbList.item(i).text())
-                if not verbShelf[key].was_previouslyStudied(self.user):
-                    self.studyVerbs.append(key)
-            self.launchSessionWindow(verbShelf)
+        self.studyVerbs = []
+        for i in range(self.QverbList.count()):
+            if len(self.studyVerbs) > 2:
+                break
+            verb = self.verbListtoTransInfin(self.QverbList.item(i).text())
+            if not verbShelf[key].was_previouslyStudied(self.user):
+                self.studyVerbs.append(key)
+        self.launchSessionWindow(verbShelf)
 
     def autoQuizSession(self):
         """grabs the three most overdue verbs (including verbs which are not yet due if there are no overdue verbs) and

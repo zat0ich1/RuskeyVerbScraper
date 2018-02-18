@@ -12,17 +12,20 @@ import datetime
 import random
 from PyQt4 import QtCore
 
-def listAverage(someList, returninteger=False):
-    """takes a list of numbers and an optional parameter to return an integer
-    value; returns an average of the values in the list"""
-    mySum = 0
-    for i in range(len(someList)):
-        mySum += someList[i][0]
-    myLen = len(someList)
-    if returninteger:
-        return int(mySum/myLen)
-    else:
-        return round(mySum/myLen,2)
+#=================================================
+# HELPER FUNCTIONS
+#=================================================
+def qDateFromString(string):
+    """Returns a QDate object from a given string date in ISO format"""
+    return QtCore.QDate.fromString(string, QtCore.Qt.ISODate)
+
+def qDateToString(date):
+    """Returns the ISO format string representation of a QDate object"""
+    return date.toString(QtCore.Qt.ISODate)
+
+#=================================================
+# USER RELATED FUNCTIONS
+#=================================================
 
 def get_daysOverdue(verb, user):
     """verb - transliterated form of a russian infinitive (string);
@@ -38,42 +41,8 @@ def get_daysOverdue(verb, user):
     cursor.close()
     conn.close()
     verbDueDate = verbDueDate[0][0]
-    verbDueDate = QtCore.QDate.fromString(verbDueDate, QtCore.Qt.ISODate)
+    verbDueDate = qDateFromString(verbDueDate)
     return verbDueDate.daysTo(QtCore.QDate.currentDate())
-
-
-def get_formsList(verb):
-    """verb - transliterated form of a russian infinitive (string);
-    returns a list of the forms (used to populate the verb browser)
-    """
-    conn = sqlite3.connect('./verbsSQLDB')
-    cursor = conn.cursor()
-    cursor.execute("""SELECT
-                   infinitive,
-                   meaning,
-                   aspect,
-                   frequency,
-                   firstSg,
-                   secondSg,
-                   thirdSg,
-                   firstPl,
-                   secondPl,
-                   thirdPl,
-                   imperativeSg,
-                   imperativePl,
-                   pastMasc,
-                   pastFem,
-                   pastNeut,
-                   pastPl
-                   FROM verbCards WHERE transInfinitive=?""",
-                   (verb,))
-    forms = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    formsList = []
-    for i in forms[0]:
-        formsList.append(str(i))
-    return formsList
 
 def get_userList():
     """returns a list of the users in verbsSQLDB"""
@@ -100,7 +69,6 @@ def userExists(name):
         return False
     else:
         return True
-
 
 def get_dueDateText(verb, user):
     """verb - transliterated Russian infinitive (string); user - user name (string);
@@ -145,52 +113,120 @@ def populate_average(verb, user):
     if type(verb) == int:
         targetID = verb
     if type(verb) != int:
-        cursor.execute('SELECT verbID FROM verbCards WHERE transInfinitive=?',
+        cursor.execute("""SELECT verbID FROM verbCards
+                       WHERE transInfinitive=?""",
                        (verb,))
         targetID = cursor.fetchone()
         targetID = targetID[0]
-    cursor.execute('SELECT verbID FROM userAverage WHERE verbID=? AND userName=?',
-                   (targetID, user))
-    testForVerb = cursor.fetchall()
-    if testForUser != []:
-        cursor.execute('SELECT easinessFactor FROM users where verbID=?',
-                       (targetID,))
-        easinessList = cursor.fetchall()
 
-        easinessAverage = listAverage(easinessList)
-        cursor.execute('SELECT lastInterval FROM users where verbID=?',
-                       (targetID,))
-        intervalList = cursor.fetchall()
-        intervalAverage = listAverage(intervalList, returninteger=True)
-        cursor.execute("""SELECT dateLastStudied FROM users
-                       ORDER BY dateLastStudied ASC""")
-        earliestDate = cursor.fetchone()
-        earliestDate = earliestDate[0]
-        cursor.execute('SELECT dueDate FROM users ORDER BY dueDate ASC')
-        earliestDueDate = cursor.fetchone()
-        earliestDueDate = earliestDueDate[0]
+    if testForUser != []:
+        cursor.execute("""SELECT easinessFactor,
+                       lastInterval,
+                       dateLastStudied,
+                       dueDate
+                       FROM users WHERE verbID=?
+                       AND userName=?""",
+                       (targetID, user))
+        data = cursor.fetchall()
+        easinessSum = 0
+        lastIntervalSum = 0
+        earliestDateLastStudied = ""
+        for i in data:
+            easinessSum += i[0]
+            lastIntervalSum += i[1]
+            if earliestDateLastStudied == "":
+                earliestDateLastStudied = qDateFromString(i[2])
+                earliestDueDate = qDateFromString(i[3])
+            if (qDateFromString(i[2]) < earliestDateLastStudied):
+                earliestDateLastStudied = qDateFromString(i[2])
+            if (qDateFromString(i[3]) < earliestDueDate):
+                earliestDueDate = qDateFromString(i[3])
+        easinessAverage = round((easinessSum / len(data)), 2)
+        lastIntervalAverage = int(lastIntervalSum / len(data))
+        earliestDateLastStudied = qDateToString(earliestDateLastStudied)
+        earliestDueDate = qDateToString(earliestDueDate)
+        #test whether to insert or update
+        cursor.execute("""SELECT verbCards.verbID, userName FROM verbCards
+                       INNER JOIN userAverage
+                       ON verbCards.verbID = userAverage.verbID
+                       WHERE verbCards.verbID=? AND userName=?""",
+                       (targetID, user))
+        testForVerb = cursor.fetchall()
+
         if testForVerb == []:
+            newAvgData = (user, targetID, easinessAverage, lastIntervalAverage,
+                          earliestDateLastStudied, earliestDueDate, False)
+            #note that previously studied defaults to False if verb not already in
             cursor.execute("""INSERT INTO userAverage VALUES
                            (?, ?, ?, ?, ?, ?, ?)""",
-                           (user, targetID, easinessAverage, intervalAverage,
-                            earliestDate, earliestDueDate, False))
+                           newAvgData)
         else:
-            cursor.execute("""SELECT dueDate FROM userAverage
-                           INNER JOIN verbCards ON
-                           userAverage.verbID = verbCards.verbID
-                           WHERE userAverage.userName=?
-                           AND verbCards.transInfinitive=?""",
-                           (user, verb))
-            dueDate = cursor.fetchall()
-            dueDate = dueDate[0][0]
-            dueDate = QtCore.QDate.fromString(dueDate, QtCore.Qt.ISODate)
+            newAvgData = (easinessAverage, lastIntervalAverage,
+                          earliestDateLastStudied, earliestDueDate,
+                          True, user, targetID)
             cursor.execute("""UPDATE userAverage SET easinessFactor=?,
                            lastInterval=?, dateLastStudied=?, dueDate=?,
                            previouslyStudied=? WHERE userName=?
                            AND verbID=?""",
-                           (easinessAverage, intervalAverage, earliestDate,
-                            earliestDueDate, True, user, targetID))
+                           newAvgData)
         conn.commit()
+    cursor.close()
+    conn.close()
+
+def populate_averageAll(user):
+    """user (string) - the name of a user in the DB; for each verb in the DB,
+    generates average values for easiness factor, last interval based on the
+    scores associated with that verb's examples; generates
+    earliest dates for date last studied and due dates; stores these average
+    and earliest values in the userAverage table row for the corresponding verb"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT verbID, easinessFactor, lastInterval,
+                   dateLastStudied, dueDate FROM users
+                   WHERE userName=? ORDER BY verbID ASC""",
+                   (user,))
+    data = cursor.fetchall()
+    avgDict = {}
+    countDict = {}
+    for i in data:
+        if i[0] not in avgDict.keys():
+            avgDict[i[0]] = [i[0], i[1], i[2], i[3], i[4]]
+            countDict[i[0]] = 1
+        else:
+            avgDict[i[0]][1] += i[1]
+            avgDict[i[0]][2] += i[2]
+            countDict[i[0]] += 1
+            if qDateFromString(i[3]) < qDateFromString(avgDict[i[0]][3]):
+                avgDict[i[0]][3] = i[3]
+            if qDateFromString(i[4]) < qDateFromString(avgDict[i[0]][4]):
+                avgDict[i[0]][4] = i[4]
+    dataToWrite = []
+    cursor.execute("""SELECT userName FROM userAverage
+                   WHERE userName=?""", (user,))
+    testForUser = cursor.fetchall() #test to see if user already in user average;
+    #if not, need to append False for previously studied
+    if testForUser == []:
+        for key in avgDict:
+            avgDict[key][1] = round(avgDict[key][1]/countDict[key], 2)
+            avgDict[key][2] = int(avgDict[key][2]/countDict[key])
+            avgDict[key].insert(0, user)
+            avgDict[key].append(False)
+            dataToWrite.append(tuple(avgDict[key]))
+        cursor.executemany("""INSERT INTO userAverage
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                           dataToWrite)
+    else:
+        for key in avgDict:
+            avgDict[key][1] = round(avgDict[key][1]/countDict[key], 2)
+            avgDict[key][2] = int(avgDict[key][2]/countDict[key])
+            avgDict[key].append(user)
+            avgDict[key].append(avgDict[key][0])
+            del(avgDict[key][0])
+            dataToWrite.append(tuple(avgDict[key]))
+        cursor.executemany("""UPDATE userAverage SET easinessFactor=?,
+                       lastInterval=?, dateLastStudied=?, dueDate=?
+                       WHERE userName=? AND verbID=?""", dataToWrite)
+    conn.commit()
     cursor.close()
     conn.close()
 
@@ -205,24 +241,25 @@ def add_user(name):
     testForUser = cursor.fetchall() #if user is already in DB
     if testForUser == []:
         cursor.execute('SELECT exampleID, verbID FROM examples')
-        dateLastStudied = QtCore.QDate.currentDate().toString(QtCore.Qt.ISODate)
+        dateLastStudied = qDateToString(QtCore.QDate.currentDate())
         lastInterval = 1
         easinessFactor = 2.5
         previouslyStudied = False
-        dueDate = QtCore.QDate.currentDate().addDays(1).toString(QtCore.Qt.ISODate)
+        dueDate = qDateToString(QtCore.QDate.currentDate().addDays(1))
+        data = []
         for i in cursor.fetchall():
-            cursor.execute('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)',
-                           (name, int(i[0]), int(i[1]), easinessFactor, lastInterval,
-                            dateLastStudied,  dueDate))
+            data.append((name, int(i[0]), int(i[1]), easinessFactor,
+                         lastInterval, dateLastStudied, dueDate))
+        print(data)
+        cursor.executemany('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)',
+                           data)
         cursor.execute('SELECT verbID FROM verbCards')
         allVerbs = cursor.fetchall() #get a list of tuples; each tuple has only
+        print(allVerbs)
         conn.commit()
     cursor.close()
     conn.close()
-    if testForUser == []:
-        for someVerb in allVerbs: #the verbID
-            someVerbID = someVerb[0] #extract verbID from tuples
-            populate_average(someVerbID, name)
+    populate_averageAll(name)
 
 def del_user(name):
     """removes a user from the user table"""
@@ -261,34 +298,128 @@ def get_SortedVerbList(user):
         notPreviouslyStudiedList.append(freq + i[1])
     return previouslyStudiedList + notPreviouslyStudiedList
 
-# populate_average('byt', 'Steve')
+def was_previouslyStudied(verb, user):
+    """returns True if a verb was previously studied by the specified user;
+    False otherwise; used to determine whether a user should be presented
+    with familiarization screens prior to quiz initiation"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT previouslyStudied FROM userAverage
+                   INNER JOIN verbCards
+                   ON userAverage.verbID = verbCards.verbID
+                   WHERE verbCards.transInfinitive=?
+                   AND userAverage.userName=?""",
+                   (verb, user))
+    result = cursor.fetchall()
+    result = result[0][0]
+    cursor.close()
+    conn.close()
+    if result == 1:
+        return True
+    else:
+        return False
 
-# add_user('Steve')
-# add_user('Jim')
-# print(get_userlist())
+#==============================================
+# VERB FUNCTIONS INDEPENDENT OF USER
+#==============================================
 
+def get_formsList(verb):
+    """verb - transliterated form of a russian infinitive (string);
+    returns a list of the forms (used to populate the verb browser)
+    """
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT
+                   infinitive,
+                   meaning,
+                   aspect,
+                   frequency,
+                   firstSg,
+                   secondSg,
+                   thirdSg,
+                   firstPl,
+                   secondPl,
+                   thirdPl,
+                   imperativeSg,
+                   imperativePl,
+                   pastMasc,
+                   pastFem,
+                   pastNeut,
+                   pastPl
+                   FROM verbCards WHERE transInfinitive=?""",
+                   (verb,))
+    forms = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    formsList = []
+    for i in forms[0]:
+        formsList.append(str(i))
+    return formsList
 
-# def get_conjugation(verb):
-#     """verb - the transliterated string version of a russian infinitive; returns
-#     a list that is used to populate the verb browser interface with forms;
-#     the list has the following: [0] infinitive, [1] meaning, [2] aspect,
-#     [3] fequency, [4] indicative first person singular,
-#     [5]indicative second person singular, [6] indicative third person singular,
-#     [7] indicative first person plural, [8] indicative second person plural,
-#     [9] indicative third person plural, [10] imperative singular,
-#     [11] imperative plural, [12] masculine past, [13] feminine past,
-#     [14] neuter past, [15] plural past, [16] due date (if previously studied)
-#     or "not previously studied""""
-#     conn = sqlite3.connect('./verbsSQLDB')
-#     cursor = conn.cursor()
-#     cursor.execute("""SELECT infinitive, meaning, aspect, frequency, firstSg,
-#                    secondSg, thirdSg, firstPl, secondPl, thirdPl, imperativeSg,
-#                    imperativePl, pastMasc, pastFem, pastNeut, pastPl,  WHERE
-#                    transInfinitive=?""", (verb,))
-#     result = cursor.fetchall()
-#     cursor.execute("""SELECT""") #need to create new table to store average
-#     #values for verb card due dates
+def get_exampleList(verb, stripPunctuation=False, toLower=False):
+    """verg - a transliterated russian infinitive;
+    takes optional parameters to strip punctuation marks or make lower case;
+    returns a list of the russian example sentences for the specified verb;
+    the indices for these match the indices in the corresponding translation
+    list"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT example FROM examples INNER JOIN verbCards
+                   ON examples.verbID = verbCards.verbID
+                   WHERE verbCards.transInfinitive=?""", (verb,))
+    result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    exampleList = []
+    for i in result:
+        exampleList.append(i[0])
+    if not stripPunctuation and not toLower:
+        return exampleList
+    else:
+        strippedList = exampleList[:]
+        if stripPunctuation:
+            for i in range(len(strippedList)):
+                strippedList[i] = strippedList[i].replace(',','')
+                strippedList[i] = strippedList[i].replace('.','')
+                strippedList[i] = strippedList[i].replace(':','')
+                strippedList[i] = strippedList[i].replace(';','')
+                strippedList[i] = strippedList[i].replace('?','')
+                strippedList[i] = strippedList[i].replace('!','')
+        if toLower:
+            for i in range(len(strippedList)):
+                strippedList[i] = strippedList[i].lower()
+        return strippedList
 
+def get_randomizedExampleList(verb):
+    """verb - transliterated infinitive of a russian verb;
+    returns a list of randomized example sentences associated with that verb;
+    each member of the list is a list of the words in the example
+    in random order (e.g. the example sentence 'Я была с ним честной' becomes
+    ['Я', 'с', 'была', 'ним', 'честной'] - (this list would be an element of
+    the list returned))"""
+    conn = sqlite3.connect('./verbsSQLDB')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT example FROM examples INNER JOIN verbCards
+                   ON examples.verbID = verbCards.verbID
+                   WHERE verbCards.transInfinitive=?""", (verb,))
+    result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    exampleList = []
+    for i in result:
+        exampleList.append(i[0])
+    randomizedExamples = []
+    for string in exampleList:
+        string = string.replace(',','')
+        string = string.replace('.','')
+        string = string.replace(':','')
+        string = string.replace(';','')
+        string = string.replace('?','')
+        string = string.replace('!','')
+        sentenceList = string.split(' ')
+        random.shuffle(sentenceList)
+        randomizedExamples.append(sentenceList)
+    return randomizedExamples
 
 def get_infinitive(infinitive):
     """infinitive - a string containing the transliterated version of the verb
@@ -315,7 +446,6 @@ def get_aspect(infinitive):
     cursor.close()
     conn.close()
     return result
-
 
 def get_frequencyRank(infinitive):
     """infinitive - a string containing the transliterated version of the verb whose frequency rank you wish to retrieve;
@@ -398,25 +528,7 @@ def get_indicativeSecondSg(infinitive):
 # def get_pastPl(self):
 #     """returns a string containing the past plural form of the verb"""
 #     return self.pastPl
-# def get_examplesList(self, stripPunctuation=False, toLower=False):
-#     """takes an optional parameter to strip punctuation marks; returns a list of the russian example sentences; the indices for these match the indices in the corresponding translation list"""
-#     if not stripPunctuation and not toLower:
-#         return self.examplesList
-#     else:
-#
-#         strippedList = self.examplesList[:]
-#         if stripPunctuation:
-#             for i in range(len(strippedList)):
-#                 strippedList[i] = strippedList[i].replace(',','')
-#                 strippedList[i] = strippedList[i].replace('.','')
-#                 strippedList[i] = strippedList[i].replace(':','')
-#                 strippedList[i] = strippedList[i].replace(';','')
-#                 strippedList[i] = strippedList[i].replace('?','')
-#                 strippedList[i] = strippedList[i].replace('!','')
-#         if toLower:
-#             for i in range(len(strippedList)):
-#                 strippedList[i] = strippedList[i].lower()
-#         return strippedList
+
 # def get_verbForList(self):
 #     """returns a string consisting of the z-filled frequency rank, a space, and the infinitive form"""
 #     freqstr = self.frequencyRank.zfill(4) + " "
@@ -433,21 +545,7 @@ def get_indicativeSecondSg(infinitive):
 # def get_conjugationAudio(self):
 #     """returns the name of the conjugation audio file"""
 #     return self.verbAudioList[-1]
-# def get_randomizedExamplesList(self):
-#     """returns a list of randomized example sentences; each member of the list is a list of the words in the example in random order\n
-#     e.g. the example sentence 'Я была с ним честной' becomes ['Я', 'с', 'была', 'ним', 'честной'] (this list would be an element of the list returned)"""
-#     randomizedExamples = []
-#     for string in self.examplesList:
-#         string = string.replace(',','')
-#         string = string.replace('.','')
-#         string = string.replace(':','')
-#         string = string.replace(';','')
-#         string = string.replace('?','')
-#         string = string.replace('!','')
-#         sentenceList = string.split(' ')
-#         random.shuffle(sentenceList)
-#         randomizedExamples.append(sentenceList)
-#     return randomizedExamples
+#
 # def addUser(self, user, overwrite=False):
 #     """user - user to be added; overwrite - optional parameter (False by default) - if set to true, will reset SM2 values for given user name if that user already exists;
 #     otherwise, if the specified user is not already loaded, adds a user to the dictionaries used for the spaced repetition algorithm and preloads default values in these dictionaries"""
@@ -468,10 +566,7 @@ def get_indicativeSecondSg(infinitive):
 #         self.dateLastStudied[user] = QtCore.QDate.currentDate()
 #         self.dueDate[user] = self.dateLastStudied[user].addDays(self.lastInterval[user])
 #
-# def was_previouslyStudied(self, user):
-#     """returns the value of self.previouslyStudied for the user specified; used to determine whether a user should be presented with familiarization
-#     screens prior to quiz initiation"""
-#     return self.previouslyStudied.get(user, False)
+
 # def was_studiedToday(self,user):
 #     """returns True if a user last studied a verb today; False otherwise"""
 #     if not self.was_previouslyStudied(user):
