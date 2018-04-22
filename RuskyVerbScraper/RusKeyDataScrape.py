@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import requests
 from bs4 import BeautifulSoup
 import boto3
@@ -71,7 +73,10 @@ transliterateDict = {'а':'a',
 def padThousands(num):
     """num - a string representation of a number less than 1000; returns
     the string representation with leading 0s to the thousands place"""
+    # 4 > 0004, 12 > 0012
+    num = str(num)
     return num.zfill(4)
+
 
 def countVowels(word):
     """takes a string and returns the number of Russian vowels"""
@@ -82,14 +87,14 @@ def countVowels(word):
             count += 1
     return count
 
+
 def checkWordForStress(word):
     """takes a string and returns True if the word is one syllable long or has
     two or more syllables, one of which is accented; returns False otherwise"""
     #limitation here would be stressed prepositions...
     if countVowels(word) > 1 and chr(769) not in word and 'ё' not in word:
         return False
-    else:
-        return True
+    return True
 
 def checkSentenceForStress(sentence):
     """sentence - a string containing a russian sentence
@@ -148,7 +153,7 @@ def stripSoupList(SoupObj, string=False):
             holder[i] = holder[i].replace(u'\n','')
         return holder
 
-    
+
 def getExamples(someurl, verb):
     """takes url for a verb and the infinitive form for that verb; returns a list of properly stresed examples;
     if not enough properly stressed examples are located, asks the user to
@@ -351,3 +356,4 @@ for item in nonPast:
 #    verbRows = pageSoupObj.find_all('tr') #grabs all table rows on the page and puts them in a list.
 #    del(verbRows[0]) #trim off rows at the start and end that do not contain verbs
 #    del(verbRows[-3:])"""
+
